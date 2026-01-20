@@ -1,0 +1,26 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__(<p>__start__</p>)
+	idle(idle)
+	cultivation(cultivation)
+	event_trigger(event_trigger)
+	event_resolution(event_resolution)
+	dialogue_init(dialogue_init)
+	dialogue_process(dialogue_process)
+	__end__(<p>__end__</p>)
+	__start__ --> idle;
+	event_trigger --> event_resolution;
+	idle -. &nbsp;idle&nbsp; .-> __end__;
+	idle -.-> cultivation;
+	idle -. &nbsp;dialogue&nbsp; .-> dialogue_init;
+	idle -. &nbsp;event&nbsp; .-> event_trigger;
+	cultivation --> __end__;
+	dialogue_init --> __end__;
+	event_resolution --> __end__;
+	%% classDef default fill:#f2f0ff,line-height:1.2
+	%% classDef first fill-opacity:0
+	%% classDef last fill:#bfb6fc

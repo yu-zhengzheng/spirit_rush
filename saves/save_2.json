@@ -1,0 +1,25 @@
+{
+  "save_time": "2026-01-20 14:30:28",
+  "player": {
+    "name": "云逸",
+    "realm": "练气期",
+    "cultivation": 20,
+    "spiritual_power": 100,
+    "spiritual_power_max": 100,
+    "health": 100,
+    "health_max": 100,
+    "wealth": 100,
+    "cultivation_count": 2,
+    "buffs": {},
+    "inventory": {}
+  },
+  "time": {
+    "year": 1,
+    "month": 1,
+    "day": 1,
+    "hour": 8
+  },
+  "event_manager": {
+    "last_secret_realm_year": 0
+  }
+}

@@ -1,9 +1,19 @@
 """LangGraph状态定义"""
 from typing import TypedDict, List, Optional, Any
+from core.player import Player
+from core.time_system import TimeSystem
+from events.special_events import EventManager
+from npc.npcs import NPCManager
 
 
 class GameState(TypedDict, total=False):
     """游戏状态结构"""
+    # 核心系统对象
+    player: Player
+    time_system: TimeSystem
+    event_manager: EventManager
+    npc_manager: NPCManager
+
     # 游戏阶段: idle, cultivation, event, dialogue
     phase: str
     

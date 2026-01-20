@@ -31,7 +31,12 @@ class Game:
         self.time_system = TimeSystem()
         self.event_manager = EventManager()
         self.npc_manager = NPCManager()
-        self.graph_manager = GameGraphManager()
+        self.graph_manager = GameGraphManager(
+            self.player, 
+            self.time_system, 
+            self.event_manager, 
+            self.npc_manager
+        )
         
         # 初始化UI组件
         self.hud = HUD(self.screen)
@@ -204,29 +209,27 @@ class Game:
     
     def _do_cultivation(self):
         """执行修炼"""
-        # 通过LangGraph处理修炼
-        self.graph_manager.start_cultivation()
-        
-        # 执行实际修炼逻辑
-        result = CultivationSystem.perform_cultivation(self.player, self.time_system)
+        # 通过LangGraph处理修炼 (现在逻辑在节点内)
+        state = self.graph_manager.start_cultivation()
         
         # 显示结果消息
-        self.message_box.show_message(result["message"], 2000)
+        self.message_box.show_message(state["message"], 2000)
         
         # 检查是否触发事件
-        event = self.event_manager.check_events(
-            self.player, 
-            self.time_system,
-            result.get("breakthrough", False)
-        )
-        
-        if event:
-            self._show_event(event)
+        if state.get("should_trigger_event"):
+            event = self.event_manager.check_events(
+                self.player, 
+                self.time_system,
+                state.get("breakthrough_occurred", False)
+            )
+            if event:
+                self._show_event(event)
     
     def _do_meditate(self):
         """执行打坐"""
-        result = CultivationSystem.meditate(self.player, self.time_system)
-        self.message_box.show_message(result["message"], 2000)
+        # 通过LangGraph处理打坐
+        state = self.graph_manager.process_action("meditate")
+        self.message_box.show_message(state["message"], 2000)
     
     def _show_inventory(self):
         """显示背包"""
@@ -236,6 +239,10 @@ class Game:
     def _show_event(self, event: dict):
         """显示事件面板"""
         self.current_event = event
+        
+        # 同步到LangGraph
+        self.graph_manager.trigger_event(event["type"], event)
+        
         self.event_panel.set_event(
             event["title"],
             event["description"],
@@ -257,20 +264,15 @@ class Game:
             return
         
         if self.current_event:
-            # 解决事件
-            result = self.event_manager.resolve_event(
-                self.current_event,
-                option_id,
-                self.player,
-                self.time_system
-            )
+            # 通过LangGraph解决事件
+            state = self.graph_manager.resolve_event(option_id)
             
             # 显示结果
-            self.event_panel.show_result(result["message"])
+            self.event_panel.show_result(state["message"])
             
             # 检查是否需要触发对话
-            if result.get("trigger_dialogue"):
-                self._start_dialogue(result["trigger_dialogue"])
+            if state.get("action_result", {}).get("trigger_dialogue"):
+                self._start_dialogue(state["action_result"]["trigger_dialogue"])
     
     def _start_dialogue(self, npc_id: str):
         """开始与NPC对话"""
@@ -290,7 +292,7 @@ class Game:
     
     def _handle_dialogue_option(self, option_text: str):
         """处理对话选项"""
-        # 通过LangGraph处理对话
+        # 通过LangGraph处理对话 (包括特殊逻辑也已移至节点)
         state = self.graph_manager.continue_dialogue(option_text)
         
         if state.get("dialogue_ended"):
@@ -301,41 +303,11 @@ class Game:
             self.current_npc_id = None
             return
         
-        # 处理特殊选项
-        npc = self.npc_manager.get_npc(self.current_npc_id)
-        extra_message = None
-        
-        if self.current_npc_id == "master":
-            master = npc
-            if option_text == "请求指点":
-                result = master.give_guidance(self.player)
-                extra_message = result["message"]
-        
-        elif self.current_npc_id == "merchant":
-            if option_text == "查看商品":
-                # 显示商品列表
-                merchant = npc
-                items = merchant.get_shop_items()
-                items_text = "\n".join([f"{i['name']}: {i['price']}灵石 - {i['desc']}" for i in items])
-                state["npc_response"] = f"本店商品：\n{items_text}"
-        
-        elif self.current_npc_id == "friend":
-            friend = npc
-            if option_text == "切磋交流":
-                result = friend.spar(self.player)
-                extra_message = result["message"]
-            elif option_text == "闲聊":
-                result = friend.chat(self.player)
-                extra_message = result["message"]
-        
         # 更新对话框
-        response = state.get("npc_response", "...")
-        if extra_message:
-            response = extra_message
-        
+        npc = self.npc_manager.get_npc(self.current_npc_id)
         self.dialogue_box.set_dialogue(
             npc.get_display_name(),
-            response,
+            state.get("npc_response", "..."),
             state.get("dialogue_options", ["告辞"])
         )
     
@@ -347,9 +319,8 @@ class Game:
             self.time_system.get_full_time_string()
         )
         
-        # 更新LangGraph状态
-        self.graph_manager.update_player_info(self.player.get_display_info())
-        self.graph_manager.update_time_info(self.time_system.to_dict())
+        # 同步对象信息到快照
+        self.graph_manager.update_state_info()
         
         # 更新消息框
         self.message_box.update(dt)

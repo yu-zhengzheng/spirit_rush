@@ -59,17 +59,24 @@ def create_game_graph() -> StateGraph:
             "end": END,  # 结束对话
         }
     )
-    
+
     return graph
 
 
 class GameGraphManager:
     """游戏状态图管理器"""
     
-    def __init__(self):
+    def __init__(self, player, time_system, event_manager, npc_manager):
         self.graph = create_game_graph()
         self.compiled_graph = self.graph.compile()
+        mmd_graph = self.compiled_graph.get_graph().draw_mermaid().replace("classDef", "%% classDef")
+        with open("graph.mmd", "w") as f:
+            f.write(mmd_graph)
         self.current_state: GameState = {
+            "player": player,
+            "time_system": time_system,
+            "event_manager": event_manager,
+            "npc_manager": npc_manager,
             "phase": "idle",
             "player_info": {},
             "time_info": {},
@@ -92,13 +99,10 @@ class GameGraphManager:
             "dialogue_ended": False,
         }
     
-    def update_player_info(self, player_info: dict):
-        """更新玩家信息"""
-        self.current_state["player_info"] = player_info
-    
-    def update_time_info(self, time_info: dict):
-        """更新时间信息"""
-        self.current_state["time_info"] = time_info
+    def update_state_info(self):
+        """同步对象信息到快照（用于UI显示）"""
+        self.current_state["player_info"] = self.current_state["player"].get_display_info()
+        self.current_state["time_info"] = self.current_state["time_system"].to_dict()
     
     def process_action(self, action: str, params: dict = None) -> GameState:
         """处理玩家动作"""
@@ -108,6 +112,9 @@ class GameGraphManager:
         # 运行状态图
         result = self.compiled_graph.invoke(self.current_state)
         self.current_state = result
+        
+        # 处理完成后更新快照
+        self.update_state_info()
         
         return result
     

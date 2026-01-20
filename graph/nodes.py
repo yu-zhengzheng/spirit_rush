@@ -3,6 +3,7 @@ import random
 from typing import Literal
 from graph.state import GameState
 from config.settings import NPCS
+from core.cultivation import CultivationSystem
 
 
 def idle_node(state: GameState) -> GameState:
@@ -15,10 +16,29 @@ def idle_node(state: GameState) -> GameState:
 
 
 def cultivation_node(state: GameState) -> GameState:
-    """修炼节点 - 实际修炼逻辑在外部处理"""
+    """修炼节点 - 执行实际修炼/打坐逻辑"""
+    action = state.get("action")
+    player = state["player"]
+    time_system = state["time_system"]
+    
+    if action == "cultivate":
+        result = CultivationSystem.perform_cultivation(player, time_system)
+    elif action == "meditate":
+        result = CultivationSystem.meditate(player, time_system)
+    else:
+        result = {"success": False, "message": "未知动作"}
+    
+    # 检查是否触发事件
+    breakthrough = result.get("breakthrough", False)
+    should_trigger = state["event_manager"].check_events(player, time_system, breakthrough) is not None
+    
     return {
         **state,
         "phase": "cultivation",
+        "action_result": result,
+        "message": result.get("message", ""),
+        "should_trigger_event": should_trigger,
+        "breakthrough_occurred": breakthrough,
     }
 
 
@@ -51,10 +71,31 @@ def event_trigger_node(state: GameState) -> GameState:
 
 
 def event_resolution_node(state: GameState) -> GameState:
-    """事件解决节点 - 实际逻辑在外部处理"""
+    """事件解决节点"""
+    event_manager = state["event_manager"]
+    player = state["player"]
+    time_system = state["time_system"]
+    event_data = state.get("event_data", {})
+    selected_option = state.get("selected_option")
+    
+    if selected_option is not None:
+        # 获取当前正在处理的事件
+        # 注意：这里需要确保 state["event_type"] 对应的事件是当前活跃事件
+        # 在这个架构中，event_data 应该包含足够的上下文信息
+        result = event_manager.resolve_event(
+            event_data, 
+            selected_option, 
+            player, 
+            time_system
+        )
+    else:
+        result = {"message": "未选择选项", "success": False}
+    
     return {
         **state,
         "phase": "idle",
+        "action_result": result,
+        "message": result.get("message", ""),
         "event_type": None,
         "event_data": {},
         "event_options": [],
@@ -100,6 +141,8 @@ def dialogue_process_node(state: GameState) -> GameState:
     user_input = state.get("user_input", "")
     npc_id = state.get("current_npc")
     history = state.get("dialogue_history", [])
+    player = state["player"]
+    npc_manager = state["npc_manager"]
     
     # 记录玩家选择
     history.append({
@@ -107,8 +150,32 @@ def dialogue_process_node(state: GameState) -> GameState:
         "content": user_input,
     })
     
-    # 调用LLM占位符生成回复
-    response = _generate_npc_response(npc_id, user_input, history)
+    # 处理特殊逻辑
+    extra_message = None
+    npc = npc_manager.get_npc(npc_id)
+    
+    if npc_id == "master":
+        if user_input == "请求指点":
+            result = npc.give_guidance(player)
+            extra_message = result["message"]
+    elif npc_id == "merchant":
+        if user_input == "查看商品":
+            items = npc.get_shop_items()
+            items_text = "\n".join([f"{i['name']}: {i['price']}灵石 - {i['desc']}" for i in items])
+            extra_message = f"本店商品：\n{items_text}"
+    elif npc_id == "friend":
+        if user_input == "切磋交流":
+            result = npc.spar(player)
+            extra_message = result["message"]
+        elif user_input == "闲聊":
+            result = npc.chat(player)
+            extra_message = result["message"]
+    
+    # 生成回复
+    if extra_message:
+        response = extra_message
+    else:
+        response = _generate_npc_response(npc_id, user_input, history)
     
     # 记录NPC回复
     history.append({
@@ -178,7 +245,7 @@ def route_from_idle(state: GameState) -> Literal["cultivation", "event", "dialog
     """从闲置状态路由"""
     action = state.get("action", "")
     
-    if action == "cultivate":
+    if action in ["cultivate", "meditate"]:
         return "cultivation"
     elif action == "trigger_event":
         return "event"
