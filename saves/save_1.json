@@ -1,25 +1,27 @@
 {
-  "save_time": "2026-01-21 11:50:37",
+  "save_time": "2026-01-21 16:51:51",
   "player": {
     "name": "云逸",
-    "realm": "练气期",
-    "cultivation": 939,
-    "spiritual_power": 0,
+    "realm": "金丹期",
+    "cultivation": 1972,
+    "spiritual_power": 94,
     "spiritual_power_max": 100,
     "health": 100,
     "health_max": 100,
-    "wealth": 84,
-    "cultivation_count": 88,
+    "wealth": 0,
+    "cultivation_count": 106,
     "buffs": {},
-    "inventory": {}
+    "inventory": {
+      "定心丹": 2
+    }
   },
   "time": {
-    "year": 1,
-    "month": 1,
-    "day": 6,
-    "hour": 18
+    "year": 2,
+    "month": 3,
+    "day": 23,
+    "hour": 3
   },
   "event_manager": {
-    "last_secret_realm_year": 0
+    "last_secret_realm_year": 1
   }
 }

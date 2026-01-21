@@ -335,6 +335,71 @@ class MessageBox(Panel):
             y += 30
 
 
+class LogPanel:
+    """滚动消息日志面板 - 显示在右下角"""
+    
+    def __init__(self, screen: pygame.Surface):
+        self.screen = screen
+        self.width = 350
+        self.height = 180
+        
+        # 右下角位置
+        screen_w, screen_h = screen.get_size()
+        self.x = screen_w - self.width - 20
+        self.y = screen_h - self.height - 100 # 避开底部按钮
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        self.messages = [] # 存储最近的消息
+        self.max_messages = 6
+        
+        self.font = pygame.font.SysFont("simsun", FONT_SIZE_SMALL)
+        self.bg_color = (20, 20, 40, 180) # 带透明度的深色背景
+    
+    def add_message(self, message: str):
+        """添加新消息"""
+        if not message:
+            return
+            
+        # 处理多行消息
+        lines = message.split('\n')
+        for line in lines:
+            if line.strip():
+                self.messages.append(line.strip())
+        
+        # 保持最大行数
+        if len(self.messages) > self.max_messages:
+            self.messages = self.messages[-self.max_messages:]
+    
+    def draw(self):
+        """绘制日志面板"""
+        # 绘制背景
+        bg_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        bg_surface.fill(self.bg_color)
+        self.screen.blit(bg_surface, (self.x, self.y))
+        
+        # 绘制边框
+        pygame.draw.rect(self.screen, COLORS["panel_border"], self.rect, 1)
+        
+        # 绘制文字 (从下往上，最新在最下)
+        line_height = 25
+        padding = 10
+        
+        for i, msg in enumerate(reversed(self.messages)):
+            # 透明度随消息新旧变化
+            alpha = 255 - (i * 30)
+            if alpha < 100: alpha = 100
+            
+            color = (255, 255, 255, alpha)
+            # 使用带透明度的绘制需要 Surface
+            msg_surface = self.font.render(msg, True, (255, 255, 255))
+            msg_surface.set_alpha(alpha)
+            
+            # 位置：最下面的消息 i=0 在 y + height - padding - line_height
+            draw_y = self.y + self.height - padding - (i + 1) * line_height
+            if draw_y >= self.y + padding:
+                self.screen.blit(msg_surface, (self.x + padding, draw_y))
+
+
 class MenuPanel(Panel):
     """菜单面板 - 存档/读档/退出"""
     

@@ -11,7 +11,7 @@ from events.special_events import EventManager
 from npc.npcs import NPCManager, Master, Merchant, Friend
 from ui.hud import HUD
 from ui.buttons import ButtonGroup
-from ui.panels import EventPanel, DialogueBox, InventoryPanel, MessageBox, MenuPanel
+from ui.panels import EventPanel, DialogueBox, InventoryPanel, LogPanel, MenuPanel
 
 
 class Game:
@@ -37,7 +37,7 @@ class Game:
         self.event_panel = EventPanel(self.screen)
         self.dialogue_box = DialogueBox(self.screen)
         self.inventory_panel = InventoryPanel(self.screen)
-        self.message_box = MessageBox(self.screen)
+        self.log_panel = LogPanel(self.screen)
         self.menu_panel = MenuPanel(self.screen)
         
         # 游戏状态
@@ -52,8 +52,23 @@ class Game:
         """游戏主循环"""
         while self.running:
             dt = self.clock.tick(FPS)
-            
-            self.handle_events()
+
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_pressed = pygame.mouse.get_pressed()[0]
+
+            # 更新UI状态
+            self.button_group.update(mouse_pos, mouse_pressed)
+            self.event_panel.update(mouse_pos, mouse_pressed)
+            self.dialogue_box.update(mouse_pos, mouse_pressed)
+            self.inventory_panel.update(mouse_pos, mouse_pressed)
+            self.menu_panel.update(mouse_pos, mouse_pressed)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    self._handle_click(mouse_pos)
             self.update(dt)
             self.draw()
             
@@ -61,26 +76,7 @@ class Game:
         
         pygame.quit()
         sys.exit()
-    
-    def handle_events(self):
-        """处理输入事件"""
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_pressed = pygame.mouse.get_pressed()[0]
-        
-        # 更新UI状态
-        self.button_group.update(mouse_pos, mouse_pressed)
-        self.event_panel.update(mouse_pos, mouse_pressed)
-        self.dialogue_box.update(mouse_pos, mouse_pressed)
-        self.inventory_panel.update(mouse_pos, mouse_pressed)
-        self.menu_panel.update(mouse_pos, mouse_pressed)
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                self._handle_click(mouse_pos)
-    
+
     def _handle_click(self, mouse_pos: tuple):
         """处理鼠标点击"""
         # 菜单面板优先级最高
@@ -139,12 +135,12 @@ class Game:
     def _do_use_spirit_stone(self):
         """执行补灵（使用灵石恢复灵力）"""
         result = CultivationSystem.use_spirit_stone_action(self.player)
-        self.message_box.show_message(result["message"], 2000)
+        self.log_panel.add_message(result["message"])
     
     def _do_mining(self):
         """执行挖矿"""
         result = CultivationSystem.mine_action(self.player, self.time_system)
-        self.message_box.show_message(result["message"], 2000)
+        self.log_panel.add_message(result["message"])
         self._end_player_turn()
     
     def _end_player_turn(self):
@@ -152,7 +148,7 @@ class Game:
         # 1. NPC策略更新
         # 2. NPC行动
         # 目前简单模拟，显示消息
-        self.message_box.show_message("回合结束，NPC正在行动...", 1000)
+        self.log_panel.add_message("回合结束，NPC正在行动...")
         
         # 这里可以调用 npc_manager 的更新方法
         # self.npc_manager.update_all_npcs(self.player, self.time_system)
@@ -189,7 +185,7 @@ class Game:
             # 保存到指定槽位
             result = save_game(self.player, self.time_system, self.event_manager, slot)
             self.menu_panel.hide()
-            self.message_box.show_message(result["message"], 2500)
+            self.log_panel.add_message(result["message"])
         
         elif action == "load_slot":
             # 从指定槽位读取
@@ -198,9 +194,9 @@ class Game:
             if result["success"]:
                 self._apply_save_data(result["data"])
                 self.menu_panel.hide()
-                self.message_box.show_message("读档成功！", 2000)
+                self.log_panel.add_message("读档成功！")
             else:
-                self.message_box.show_message(result["message"], 2000)
+                self.log_panel.add_message(result["message"])
     
     def _apply_save_data(self, data: dict):
         """应用存档数据"""
@@ -234,7 +230,7 @@ class Game:
         result = CultivationSystem.perform_cultivation(self.player, self.time_system)
         
         # 显示结果消息
-        self.message_box.show_message(result["message"], 2000)
+        self.log_panel.add_message(result["message"])
         
         if result.get("success"):
             # 检查是否触发事件
@@ -253,7 +249,7 @@ class Game:
     def _do_meditate(self):
         """执行打坐"""
         result = CultivationSystem.meditate(self.player, self.time_system)
-        self.message_box.show_message(result["message"], 2000)
+        self.log_panel.add_message(result["message"])
     
     def _show_inventory(self):
         """显示背包"""
@@ -381,9 +377,6 @@ class Game:
             self.player.get_display_info(),
             self.time_system.get_full_time_string()
         )
-        
-        # 更新消息框
-        self.message_box.update(dt)
     
     def draw(self):
         """绘制画面"""
@@ -405,7 +398,7 @@ class Game:
         self.event_panel.draw()
         self.dialogue_box.draw()
         self.menu_panel.draw()
-        self.message_box.draw()
+        self.log_panel.draw()
     
     def _draw_background(self):
         """绘制装饰性背景"""
