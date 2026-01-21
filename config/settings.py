@@ -120,7 +120,7 @@ MINING_TIME_COST = 200        # 挖矿消耗的时间
 MINING_SPIRIT_STONE_GAIN = (1, 3) # 挖矿获得的灵石数量范围
 
 # UI配置
-HUD_RECT = (10, 10, 300, 180)  # HUD位置和大小
+HUD_RECT = (10, 10, 280, 220)  # HUD位置和大小
 BUTTON_HEIGHT = 50
 BUTTON_WIDTH = 120
 BUTTON_MARGIN = 10

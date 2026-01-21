@@ -5,7 +5,7 @@ import sys
 from config.settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, COLORS
 from core.player import Player
 from core.time_system import TimeSystem
-from core.cultivation import CultivationSystem
+import core.cultivation as cultivation
 from core.save_system import save_game, load_game, get_save_files
 from events.special_events import EventManager
 from npc.npcs import NPCManager, Master, Merchant, Friend
@@ -109,37 +109,62 @@ class Game:
         # 底部按钮
         button_name = self.button_group.get_clicked_button(mouse_pos)
         if button_name:
-            self._handle_button_click(button_name)
+            """处理按钮点击"""
+            if button_name == "cultivate":
+                self._do_cultivation()
+            elif button_name == "use_stone":
+                self._do_use_spirit_stone()
+            elif button_name == "mine":
+                self._do_mining()
+            elif button_name == "meditate":
+                self._do_meditate()
+            elif button_name == "inventory":
+                self._show_inventory()
+            elif button_name == "menu":
+                self._show_menu()
             return
         
         # 点击NPC
         npc = self.npc_manager.get_clicked_npc(mouse_pos[0], mouse_pos[1])
         if npc:
             self._start_dialogue(npc.npc_id)
-    
-    def _handle_button_click(self, button_name: str):
-        """处理按钮点击"""
-        if button_name == "cultivate":
-            self._do_cultivation()
-        elif button_name == "use_stone":
-            self._do_use_spirit_stone()
-        elif button_name == "mine":
-            self._do_mining()
-        elif button_name == "meditate":
-            self._do_meditate()
-        elif button_name == "inventory":
-            self._show_inventory()
-        elif button_name == "menu":
-            self._show_menu()
-    
+
+    def _do_cultivation(self):
+        """执行修炼"""
+        # 执行实际修炼逻辑
+        result = cultivation.perform_cultivation(self.player, self.time_system)
+
+        # 显示结果消息
+        self.log_panel.add_message(result["message"])
+
+        if result.get("success"):
+            # 检查是否触发事件
+            event = self.event_manager.check_events(
+                self.player,
+                self.time_system,
+                result.get("breakthrough", False)
+            )
+
+            if event:
+                self._show_event(event)
+
+            # 结束玩家回合
+            self._end_player_turn()
+
+    def _do_meditate(self):
+        """执行打坐"""
+        result = cultivation.meditate(self.player, self.time_system)
+        self.log_panel.add_message(result["message"])
+        self._end_player_turn()
+
     def _do_use_spirit_stone(self):
         """执行补灵（使用灵石恢复灵力）"""
-        result = CultivationSystem.use_spirit_stone_action(self.player)
+        result = cultivation.use_spirit_stone_action(self.player)
         self.log_panel.add_message(result["message"])
     
     def _do_mining(self):
         """执行挖矿"""
-        result = CultivationSystem.mine_action(self.player, self.time_system)
+        result = cultivation.mine_action(self.player, self.time_system)
         self.log_panel.add_message(result["message"])
         self._end_player_turn()
     
@@ -223,33 +248,7 @@ class Game:
         # 恢复事件管理器数据
         event_data = data.get("event_manager", {})
         self.event_manager.last_secret_realm_year = event_data.get("last_secret_realm_year", 0)
-    
-    def _do_cultivation(self):
-        """执行修炼"""
-        # 执行实际修炼逻辑
-        result = CultivationSystem.perform_cultivation(self.player, self.time_system)
-        
-        # 显示结果消息
-        self.log_panel.add_message(result["message"])
-        
-        if result.get("success"):
-            # 检查是否触发事件
-            event = self.event_manager.check_events(
-                self.player, 
-                self.time_system,
-                result.get("breakthrough", False)
-            )
-            
-            if event:
-                self._show_event(event)
-            
-            # 结束玩家回合
-            self._end_player_turn()
-    
-    def _do_meditate(self):
-        """执行打坐"""
-        result = CultivationSystem.meditate(self.player, self.time_system)
-        self.log_panel.add_message(result["message"])
+
     
     def _show_inventory(self):
         """显示背包"""
