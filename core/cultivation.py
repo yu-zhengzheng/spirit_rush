@@ -38,9 +38,8 @@ class CultivationSystem:
             "message": str
         }
         """
-        # 检查灵力是否足够 (假设修炼消耗灵力)
-        # MMD中说 "用灵力修炼获得修为"，暗示需要灵力
-        sp_cost = 20 # 假设每次修炼消耗20灵力
+        # 检查灵力是否足够
+        sp_cost = 1 # 每次修炼消耗1灵力
         if player.spiritual_power < sp_cost:
             return {
                 "success": False,

@@ -465,12 +465,6 @@ class Game:
             pygame.draw.circle(self.screen, COLORS["white"], head_center, 20)
             pygame.draw.circle(self.screen, color, head_center, 18)
 
-
-def main():
-    """程序入口"""
+if __name__ == "__main__":
     game = Game()
     game.run()
-
-
-if __name__ == "__main__":
-    main()
