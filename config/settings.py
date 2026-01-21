@@ -114,6 +114,11 @@ SHOP_ITEMS = {
     "培元丹": {"price": 100, "effect": "restore_health", "value": 50, "desc": "恢复50点生命"},
 }
 
+# 灵石与挖矿配置
+SPIRIT_STONE_RECOVERY = 30  # 每个灵石恢复的灵力
+MINING_TIME_COST = 2        # 挖矿消耗的时间
+MINING_SPIRIT_STONE_GAIN = (1, 3) # 挖矿获得的灵石数量范围
+
 # UI配置
 HUD_RECT = (10, 10, 300, 180)  # HUD位置和大小
 BUTTON_HEIGHT = 50

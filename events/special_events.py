@@ -31,6 +31,7 @@ class EventManager:
         """
         # 优先检查境界突破触发的心魔事件
         if breakthrough:
+            print(self._create_inner_demon_event())
             return self._create_inner_demon_event()
         
         # 检查秘境开启 (金丹期以上，每年一次)
@@ -89,6 +90,7 @@ class EventManager:
         解决事件
         返回: 结果信息字典
         """
+        print(event)
         event_type = event["type"]
         
         if event_type == "spiritual_rain":

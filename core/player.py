@@ -137,6 +137,18 @@ class Player:
             return True
         return False
     
+    def use_spirit_stone(self, amount_to_restore: int) -> bool:
+        """使用灵石恢复灵力"""
+        if self.wealth >= 1:
+            self.wealth -= 1
+            self.restore_spiritual_power(amount_to_restore)
+            return True
+        return False
+    
+    def gain_wealth(self, amount: int):
+        """增加财富/灵石"""
+        self.wealth += amount
+    
     def get_display_info(self) -> dict:
         """获取显示用信息"""
         return {
