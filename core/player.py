@@ -15,8 +15,19 @@ class Player:
         self.health_max = PLAYER_INITIAL["health_max"]
         self.wealth = PLAYER_INITIAL["wealth"]
         
-        # 修炼统计
+        # 统计数据
         self.cultivation_count = 0
+        
+        # 宗门数据 (根据 MMD 增加)
+        self.sect_data = {
+            "disciples_mining": 0,
+            "disciples_recruiting": 0,
+            "vault_level": 1,
+            "cave_level": 1,
+            "disciples_total": 1,
+            "vault_max": 100,
+            "cave_max": 5
+        }
         
         # Buff效果
         self.buffs = {}  # {buff_name: {remaining: int, multiplier: float}}
@@ -147,7 +158,12 @@ class Player:
     
     def gain_wealth(self, amount: int):
         """增加财富/灵石"""
-        self.wealth += amount
+        self.wealth = min(self.sect_data.get("vault_max", 100), self.wealth + amount)
+    
+    @property
+    def idle_disciples(self) -> int:
+        """空闲弟子数"""
+        return self.sect_data["disciples_total"] - self.sect_data["disciples_mining"] - self.sect_data["disciples_recruiting"]
     
     def get_display_info(self) -> dict:
         """获取显示用信息"""
@@ -162,6 +178,11 @@ class Player:
             "health": self.health,
             "health_max": self.health_max,
             "wealth": self.wealth,
+            "wealth_max": self.sect_data.get("vault_max", 100),
+            "disciples_total": self.sect_data.get("disciples_total", 0),
+            "disciples_max": self.sect_data.get("cave_max", 5),
+            "idle_disciples": self.idle_disciples,
+            "sect": self.sect_data,
             "buffs": list(self.buffs.keys()),
         }
     
@@ -176,6 +197,7 @@ class Player:
             "health_max": self.health_max,
             "wealth": self.wealth,
             "cultivation_count": self.cultivation_count,
+            "sect_data": self.sect_data,
             "buffs": self.buffs,
             "inventory": self.inventory,
         }
@@ -191,6 +213,15 @@ class Player:
         player.health_max = data.get("health_max", 100)
         player.wealth = data.get("wealth", 100)
         player.cultivation_count = data.get("cultivation_count", 0)
+        player.sect_data = data.get("sect_data", {
+            "disciples_mining": 0,
+            "disciples_recruiting": 0,
+            "vault_level": 1,
+            "cave_level": 1,
+            "disciples_total": 0,
+            "vault_max": 100,
+            "cave_max": 5
+        })
         player.buffs = data.get("buffs", {})
         player.inventory = data.get("inventory", {})
         return player

@@ -62,7 +62,7 @@ class ButtonGroup:
         screen_height = screen.get_height()
         
         button_y = screen_height - BUTTON_HEIGHT - 20
-        start_x = (screen_width - (BUTTON_WIDTH * 6 + 50)) // 2
+        start_x = (screen_width - (BUTTON_WIDTH * 9 + 80)) // 2
         
         # 创建按钮
         self.buttons["cultivate"] = Button(
@@ -77,11 +77,20 @@ class ButtonGroup:
         self.buttons["meditate"] = Button(
             start_x + (BUTTON_WIDTH + 10) * 3, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "打坐"
         )
+        self.buttons["disciples"] = Button(
+            start_x + (BUTTON_WIDTH + 10) * 4, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "弟子"
+        )
+        self.buttons["sect"] = Button(
+            start_x + (BUTTON_WIDTH + 10) * 5, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "宗门"
+        )
+        self.buttons["end_turn"] = Button(
+            start_x + (BUTTON_WIDTH + 10) * 6, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "结回"
+        )
         self.buttons["inventory"] = Button(
-            start_x + (BUTTON_WIDTH + 10) * 4, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "背包"
+            start_x + (BUTTON_WIDTH + 10) * 7, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "背包"
         )
         self.buttons["menu"] = Button(
-            start_x + (BUTTON_WIDTH + 10) * 5, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "菜单"
+            start_x + (BUTTON_WIDTH + 10) * 8, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "菜单"
         )
     
     def update(self, mouse_pos: tuple, mouse_pressed: bool):

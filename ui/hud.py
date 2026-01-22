@@ -85,6 +85,9 @@ class HUD:
         time_x = self.screen.get_width() - time_surface.get_width() - 20
         self.screen.blit(time_surface, (time_x, 15))
         
+        # 右侧宗门状态条
+        self._draw_sect_status(time_x)
+        
         # Buff显示
         buffs = self.player_info.get("buffs", [])
         if buffs:
@@ -107,3 +110,27 @@ class HUD:
         
         # 边框
         pygame.draw.rect(self.screen, COLORS["gray"], bg_rect, 1)
+
+    def _draw_sect_status(self, right_x: int):
+        """绘制宗门状态条 (右上角)"""
+        x = right_x - 120  # 稍微往左一点
+        y = 50
+        bar_width = 200
+        bar_height = 10
+        
+        # 1. 灵库
+        wealth = self.player_info.get("wealth", 0)
+        wealth_max = self.player_info.get("wealth_max", 100)
+        vault_text = self.font_small.render(f"灵库: {wealth}/{wealth_max}", True, COLORS["orange"])
+        self.screen.blit(vault_text, (x, y))
+        y += 20
+        self._draw_progress_bar(x, y, bar_width, bar_height, wealth / wealth_max if wealth_max > 0 else 0, COLORS["orange"])
+        y += 20
+        
+        # 2. 洞府
+        disciples_total = self.player_info.get("disciples_total", 0)
+        disciples_max = self.player_info.get("disciples_max", 5)
+        cave_text = self.font_small.render(f"洞府: {disciples_total}/{disciples_max}", True, COLORS["purple"])
+        self.screen.blit(cave_text, (x, y))
+        y += 20
+        self._draw_progress_bar(x, y, bar_width, bar_height, disciples_total / disciples_max if disciples_max > 0 else 0, COLORS["purple"])

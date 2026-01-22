@@ -340,7 +340,7 @@ class LogPanel:
     
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
-        self.width = 350
+        self.width = 550
         self.height = 180
         
         # 右下角位置
@@ -587,4 +587,143 @@ class MenuPanel(Panel):
         
         # 按钮
         for btn in self.menu_buttons:
+            btn.draw(self.screen)
+
+
+class SectPanel(Panel):
+    """宗门管理面板"""
+    
+    def __init__(self, screen: pygame.Surface):
+        super().__init__(screen, 400, 350)
+        self.buttons = []
+        self.sect_data = {}
+        self.player_wealth = 0
+    
+    def update_data(self, sect_data: dict, wealth: int):
+        self.sect_data = sect_data
+        self.player_wealth = wealth
+        self._create_buttons()
+    
+    def _create_buttons(self):
+        self.buttons = []
+        btn_w, btn_h = 250, 45
+        start_y = self.y + 120
+        
+        # 升级灵库
+        vault_btn = OptionButton(self.x + (self.width - btn_w) // 2, start_y, btn_w, "升级灵库 (10灵石)", "upgrade_vault")
+        vault_btn.is_enabled = self.player_wealth >= 10
+        self.buttons.append(vault_btn)
+        
+        # 升级洞府
+        cave_btn = OptionButton(self.x + (self.width - btn_w) // 2, start_y + btn_h + 15, btn_w, "升级洞府 (10灵石)", "upgrade_cave")
+        cave_btn.is_enabled = self.player_wealth >= 10
+        self.buttons.append(cave_btn)
+        
+        # 关闭按钮
+        close_btn = OptionButton(self.x + (self.width - 100) // 2, self.y + self.height - 60, 100, "关闭", "close")
+        self.buttons.append(close_btn)
+    
+    def get_clicked_action(self, mouse_pos: tuple):
+        for btn in self.buttons:
+            if btn.is_clicked(mouse_pos):
+                return btn.option_id
+        return None
+    
+    def update(self, mouse_pos: tuple, mouse_pressed: bool):
+        for btn in self.buttons:
+            btn.update(mouse_pos, mouse_pressed)
+    
+    def draw(self):
+        if not self.draw_base():
+            return
+        
+        title = self.font_large.render("宗门设施", True, COLORS["gold"])
+        self.screen.blit(title, title.get_rect(centerx=self.x + self.width // 2, y=self.y + 20))
+        
+        # 显示当前等级
+        v_lvl = self.sect_data.get("vault_level", 1)
+        c_lvl = self.sect_data.get("cave_level", 1)
+        v_max = self.sect_data.get("vault_max", 100)
+        c_max = self.sect_data.get("cave_max", 5)
+        
+        txt_v = self.font_medium.render(f"灵库等级: {v_lvl} (容量: {v_max})", True, COLORS["white"])
+        txt_c = self.font_medium.render(f"洞府等级: {c_lvl} (容量: {c_max})", True, COLORS["white"])
+        
+        self.screen.blit(txt_v, (self.x + 50, self.y + 70))
+        self.screen.blit(txt_c, (self.x + 50, self.y + 100))
+        
+        for btn in self.buttons:
+            btn.draw(self.screen)
+
+
+class DisciplePanel(Panel):
+    """弟子管理面板"""
+    
+    def __init__(self, screen: pygame.Surface):
+        super().__init__(screen, 500, 400)
+        self.buttons = []
+        self.sect_data = {}
+        self.idle_disciples = 0
+    
+    def update_data(self, sect_data: dict, idle: int):
+        self.sect_data = sect_data
+        self.idle_disciples = idle
+        self._create_buttons()
+    
+    def _create_buttons(self):
+        self.buttons = []
+        btn_w = 40
+        row_y = self.y + 120
+        
+        # 挖矿分配
+        self._add_row_buttons("mining", row_y)
+        # 招募分配
+        self._add_row_buttons("recruiting", row_y + 60)
+        
+        # 关闭按钮
+        close_btn = OptionButton(self.x + (self.width - 100) // 2, self.y + self.height - 60, 100, "关闭", "close")
+        self.buttons.append(close_btn)
+    
+    def _add_row_buttons(self, task: str, y: int):
+        # - 按钮
+        minus_btn = OptionButton(self.x + 300, y, 40, "-", f"{task}_minus")
+        minus_btn.is_enabled = self.sect_data.get(f"disciples_{task}", 0) > 0
+        self.buttons.append(minus_btn)
+        
+        # + 按钮
+        plus_btn = OptionButton(self.x + 350, y, 40, "+", f"{task}_plus")
+        plus_btn.is_enabled = self.idle_disciples > 0
+        self.buttons.append(plus_btn)
+    
+    def get_clicked_action(self, mouse_pos: tuple):
+        for btn in self.buttons:
+            if btn.is_clicked(mouse_pos):
+                return btn.option_id
+        return None
+    
+    def update(self, mouse_pos: tuple, mouse_pressed: bool):
+        for btn in self.buttons:
+            btn.update(mouse_pos, mouse_pressed)
+    
+    def draw(self):
+        if not self.draw_base():
+            return
+        
+        title = self.font_large.render("弟子分配", True, COLORS["gold"])
+        self.screen.blit(title, title.get_rect(centerx=self.x + self.width // 2, y=self.y + 20))
+        
+        # 统计信息
+        total = self.sect_data.get("disciples_total", 0)
+        txt_stats = self.font_medium.render(f"总弟子: {total}  (空闲: {self.idle_disciples})", True, COLORS["cyan"])
+        self.screen.blit(txt_stats, (self.x + 50, self.y + 70))
+        
+        # 任务行
+        tasks = [("mining", "挖矿弟子"), ("recruiting", "招募弟子")]
+        for i, (task, label) in enumerate(tasks):
+            y = self.y + 125 + i * 60
+            count = self.sect_data.get(f"disciples_{task}", 0)
+            txt = self.font_medium.render(f"{label}: {count}", True, COLORS["white"])
+            self.screen.blit(txt, (self.x + 50, y))
+        
+        for btn in self.buttons:
             btn.draw(self.screen)

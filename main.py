@@ -1,6 +1,7 @@
 """仙宗 - 修仙模拟器 主程序"""
 import pygame
 import sys
+import random
 
 from config.settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, COLORS
 from core.player import Player
@@ -11,7 +12,7 @@ from events.special_events import EventManager
 from npc.npcs import NPCManager, Master, Merchant, Friend
 from ui.hud import HUD
 from ui.buttons import ButtonGroup
-from ui.panels import EventPanel, DialogueBox, InventoryPanel, LogPanel, MenuPanel
+from ui.panels import EventPanel, DialogueBox, InventoryPanel, LogPanel, MenuPanel, SectPanel, DisciplePanel
 
 
 class Game:
@@ -39,14 +40,34 @@ class Game:
         self.inventory_panel = InventoryPanel(self.screen)
         self.log_panel = LogPanel(self.screen)
         self.menu_panel = MenuPanel(self.screen)
+        self.sect_panel = SectPanel(self.screen)
+        self.disciple_panel = DisciplePanel(self.screen)
         
         # 游戏状态
         self.current_event = None
         self.in_dialogue = False
         self.current_npc_id = None
+        self.turn_count = 1
         
         # 背景装饰
         self.bg_color = (15, 25, 45)
+        
+        # 初始开启第一回合
+        self._start_turn()
+    
+    def _start_turn(self):
+        """开始新回合"""
+        self.log_panel.add_message(f"--- 第 {self.turn_count} 轮开始 ---")
+        
+        # MMD: 1. 回合开始 --> LLM生成随机事件
+        event = self.event_manager.check_events(
+            self.player,
+            self.time_system,
+            False # 回合开始触发
+        )
+        
+        if event:
+            self._show_event(event)
     
     def run(self):
         """游戏主循环"""
@@ -62,6 +83,8 @@ class Game:
             self.dialogue_box.update(mouse_pos, mouse_pressed)
             self.inventory_panel.update(mouse_pos, mouse_pressed)
             self.menu_panel.update(mouse_pos, mouse_pressed)
+            self.sect_panel.update(mouse_pos, mouse_pressed)
+            self.disciple_panel.update(mouse_pos, mouse_pressed)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -106,6 +129,31 @@ class Game:
                 self.inventory_panel.hide()
             return
         
+        # 宗门面板
+        if self.sect_panel.visible:
+            action = self.sect_panel.get_clicked_action(mouse_pos)
+            if action == "close":
+                self.sect_panel.hide()
+            elif action == "upgrade_vault":
+                self._do_expand_sect()
+                self.sect_panel.update_data(self.player.sect_data, self.player.wealth)
+            elif action == "upgrade_cave":
+                self._do_expand_sect() # 暂时复用同一个，后面可以拆分
+                self.sect_panel.update_data(self.player.sect_data, self.player.wealth)
+            return
+            
+        # 弟子面板
+        if self.disciple_panel.visible:
+            action = self.disciple_panel.get_clicked_action(mouse_pos)
+            if action == "close":
+                self.disciple_panel.hide()
+            elif action and "_" in action:
+                task, op = action.split("_")
+                amount = 1 if op == "plus" else -1
+                self._do_adjust_dispatch(task, amount)
+                self.disciple_panel.update_data(self.player.sect_data, self.player.idle_disciples)
+            return
+        
         # 底部按钮
         button_name = self.button_group.get_clicked_button(mouse_pos)
         if button_name:
@@ -118,6 +166,12 @@ class Game:
                 self._do_mining()
             elif button_name == "meditate":
                 self._do_meditate()
+            elif button_name == "disciples":
+                self._show_disciples()
+            elif button_name == "sect":
+                self._show_sect()
+            elif button_name == "end_turn":
+                self._end_player_turn()
             elif button_name == "inventory":
                 self._show_inventory()
             elif button_name == "menu":
@@ -138,24 +192,20 @@ class Game:
         self.log_panel.add_message(result["message"])
 
         if result.get("success"):
-            # 检查是否触发事件
-            event = self.event_manager.check_events(
-                self.player,
-                self.time_system,
-                result.get("breakthrough", False)
-            )
-
-            if event:
-                self._show_event(event)
-
-            # 结束玩家回合
-            self._end_player_turn()
+            # 检查是否触发即时突破事件 (不属于回合开始事件)
+            if result.get("breakthrough"):
+                event = self.event_manager.check_events(
+                    self.player,
+                    self.time_system,
+                    True
+                )
+                if event:
+                    self._show_event(event)
 
     def _do_meditate(self):
         """执行打坐"""
         result = cultivation.meditate(self.player, self.time_system)
         self.log_panel.add_message(result["message"])
-        self._end_player_turn()
 
     def _do_use_spirit_stone(self):
         """执行补灵（使用灵石恢复灵力）"""
@@ -166,20 +216,70 @@ class Game:
         """执行挖矿"""
         result = cultivation.mine_action(self.player, self.time_system)
         self.log_panel.add_message(result["message"])
-        self._end_player_turn()
     
+    def _do_expand_sect(self):
+        """扩建宗门 (占位)"""
+        cost = 10
+        if self.player.wealth >= cost:
+            self.player.wealth -= cost
+            self.player.sect_data["vault_level"] += 1
+            self.player.sect_data["vault_max"] += 100
+            self.player.sect_data["cave_max"] += 5
+            self.log_panel.add_message(f"消耗 {cost} 灵石扩建了宗门。灵库上限+{100}，洞府上限+{5}")
+        else:
+            self.log_panel.add_message(f"灵石不足，扩建宗门需要 {cost} 灵石。")
+
+    def _do_adjust_dispatch(self, task: str, amount: int):
+        """调整弟子派遣"""
+        if amount > 0:
+            # 增加派遣
+            if self.player.idle_disciples >= amount:
+                self.player.sect_data[f"disciples_{task}"] += amount
+                msg = "挖矿" if task == "mining" else "招募"
+                self.log_panel.add_message(f"派遣了 {amount} 名弟子去{msg}。")
+            else:
+                self.log_panel.add_message("没有足够的空闲弟子！")
+        else:
+            # 召回
+            current = self.player.sect_data[f"disciples_{task}"]
+            if current >= abs(amount):
+                self.player.sect_data[f"disciples_{task}"] += amount
+                msg = "挖矿" if task == "mining" else "招募"
+                self.log_panel.add_message(f"召回了 {abs(amount)} 名去{msg}的弟子。")
+            else:
+                self.log_panel.add_message("没有那么多正在工作的弟子！")
+
     def _end_player_turn(self):
         """结束玩家回合，执行NPC更新和回合结算"""
-        # 1. NPC策略更新
-        # 2. NPC行动
-        # 目前简单模拟，显示消息
-        self.log_panel.add_message("回合结束，NPC正在行动...")
+        # 1. NPC策略更新和行动
+        self.log_panel.add_message("回合结束，结算中...")
         
-        # 这里可以调用 npc_manager 的更新方法
-        # self.npc_manager.update_all_npcs(self.player, self.time_system)
+        # 2. 模拟弟子工作产出
+        # 挖矿产出
+        mining_gain = self.player.sect_data["disciples_mining"] * 2
+        if mining_gain > 0:
+            self.player.gain_wealth(mining_gain)
+            self.log_panel.add_message(f"弟子挖矿产出: {mining_gain} 灵石")
+            
+        # 招募产出
+        recruiting_disciples = self.player.sect_data["disciples_recruiting"]
+        if recruiting_disciples > 0:
+            new_disciples = 0
+            for _ in range(recruiting_disciples):
+                if self.player.sect_data["disciples_total"] < self.player.sect_data["cave_max"]:
+                    if random.random() < 0.3: # 30% 几率招募成功
+                        new_disciples += 1
+                        self.player.sect_data["disciples_total"] += 1
+            if new_disciples > 0:
+                self.log_panel.add_message(f"招募弟子成功：新增 {new_disciples} 名弟子！")
+            else:
+                self.log_panel.add_message("本轮未招募到新弟子。")
+
+        # 3. 回合数增加
+        self.turn_count += 1
         
-        # 回合结束，重置某些状态（如果需要）
-        pass
+        # 4. 开启下一回合
+        self._start_turn()
     
     def _show_menu(self):
         """显示菜单"""
@@ -237,6 +337,15 @@ class Game:
         self.player.cultivation_count = player_data.get("cultivation_count", 0)
         self.player.buffs = player_data.get("buffs", {})
         self.player.inventory = player_data.get("inventory", {})
+        self.player.sect_data = player_data.get("sect_data", {
+            "disciples_mining": 0,
+            "disciples_recruiting": 0,
+            "vault_level": 1,
+            "cave_level": 1,
+            "disciples_total": 1,
+            "vault_max": 100,
+            "cave_max": 5
+        })
         
         # 恢复时间数据
         time_data = data.get("time", {})
@@ -254,6 +363,16 @@ class Game:
         """显示背包"""
         self.inventory_panel.set_items(self.player.inventory)
         self.inventory_panel.show()
+    
+    def _show_sect(self):
+        """显示宗门面板"""
+        self.sect_panel.update_data(self.player.sect_data, self.player.wealth)
+        self.sect_panel.show()
+        
+    def _show_disciples(self):
+        """显示弟子面板"""
+        self.disciple_panel.update_data(self.player.sect_data, self.player.idle_disciples)
+        self.disciple_panel.show()
     
     def _show_event(self, event: dict):
         """显示事件面板"""
@@ -397,6 +516,8 @@ class Game:
         self.event_panel.draw()
         self.dialogue_box.draw()
         self.menu_panel.draw()
+        self.sect_panel.draw()
+        self.disciple_panel.draw()
         self.log_panel.draw()
     
     def _draw_background(self):
