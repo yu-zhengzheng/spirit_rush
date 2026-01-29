@@ -63,6 +63,7 @@ def save_game(player, time_system, event_manager, slot: int = 1) -> dict:
             "health_max": player.health_max,
             "wealth": player.wealth,
             "cultivation_count": player.cultivation_count,
+            "sect_data": player.sect_data,
             "buffs": player.buffs,
             "inventory": player.inventory,
         },
