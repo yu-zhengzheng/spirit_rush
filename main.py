@@ -4,7 +4,7 @@ import sys
 import random
 
 from config.settings import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, COLORS
-from core.player import Player
+from core.game_state import GameState
 from core.time_system import TimeSystem
 import core.cultivation as cultivation
 from core.save_system import save_game, load_game, get_save_files
@@ -27,7 +27,7 @@ class Game:
         self.running = True
         
         # 初始化游戏系统
-        self.player = Player("云逸")
+        self.player = GameState("云逸")
         self.time_system = TimeSystem()
         self.event_manager = EventManager()
         self.npc_manager = NPCManager()

@@ -1,7 +1,7 @@
 """仙宗 - 修仙模拟器 命令行版本"""
 import random
 import os
-from core.player import Player
+from core.game_state import GameState
 from core.time_system import TimeSystem
 from events.special_events import EventManager
 from core.save_system import save_game, load_game, get_save_files
@@ -10,7 +10,7 @@ class GameCLI:
     """游戏命令行类"""
     
     def __init__(self):
-        self.player = Player("云逸")
+        self.game_state = GameState()
         self.time_system = TimeSystem()
         self.event_manager = EventManager()
         
@@ -51,13 +51,9 @@ class GameCLI:
 
     def display_status(self):
         """显示玩家当前状态"""
-        info = self.player.get_display_info()
-        time_str = self.time_system.get_full_time_string()
+        info = self.game_state.get_display_info()
         
         print("="*50)
-        # print(f"【{info['name']}】 {info['realm']} (修为: {info['cultivation']}/{info['next_realm']})")
-        # print(f"【时间】 {time_str}")
-        # print(f"【状态】 生命: {info['health']}/{info['health_max']} | 灵力: {info['spiritual_power']}/{info['spiritual_power_max']}")
         print(f"【财富】 灵石: {info['wealth']}/{info['wealth_max']}")
         print(f"【弟子】 总数: {info['disciples_total']}/{info['disciples_max']} | 空闲: {info['idle_disciples']}")
         print(f"【分配】 挖矿: {info['sect']['disciples_mining']} | 招募: {info['sect']['disciples_recruiting']}")
@@ -73,7 +69,7 @@ class GameCLI:
         
         # 1. 回合开始 --> LLM生成随机事件
         event = self.event_manager.check_events(
-            self.player,
+            self.game_state,
             self.time_system,
             False # 回合开始触发
         )
@@ -99,7 +95,7 @@ class GameCLI:
         result = self.event_manager.resolve_event(
             event,
             option_id,
-            self.player,
+            self.game_state,
             self.time_system
         )
         print(f"\n[结果] {result['message']}")
@@ -110,7 +106,7 @@ class GameCLI:
     def _manage_disciples(self):
         """弟子管理"""
         while True:
-            info = self.player.get_display_info()
+            info = self.game_state.get_display_info()
             print(f"\n【弟子管理】 总数: {info['disciples_total']} | 空闲: {info['idle_disciples']}")
             print(f"1. 派遣至 挖矿 (当前: {info['sect']['disciples_mining']})")
             print(f"2. 派遣至 招募 (当前: {info['sect']['disciples_recruiting']})")
@@ -126,8 +122,8 @@ class GameCLI:
                 if not amount.isdigit(): continue
                 amount = int(amount)
                 task = "mining" if choice == "1" else "recruiting"
-                if self.player.idle_disciples >= amount:
-                    self.player.sect_data[f"disciples_{task}"] += amount
+                if self.game_state.idle_disciples >= amount:
+                    self.game_state.sect_data[f"disciples_{task}"] += amount
                     msg = "挖矿" if task == "mining" else "招募"
                     print(f"成功派遣 {amount} 名弟子去{msg}。")
                 else:
@@ -137,9 +133,9 @@ class GameCLI:
                 amount = input("输入召回人数: ").strip()
                 if not amount.isdigit(): continue
                 amount = int(amount)
-                current = self.player.sect_data[f"disciples_{task}"]
+                current = self.game_state.sect_data[f"disciples_{task}"]
                 if current >= amount:
-                    self.player.sect_data[f"disciples_{task}"] -= amount
+                    self.game_state.sect_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
                     print(f"成功召回 {amount} 名去{msg}的弟子。")
                 else:
@@ -148,7 +144,7 @@ class GameCLI:
     def _manage_sect(self):
         """宗门管理"""
         while True:
-            info = self.player.get_display_info()
+            info = self.game_state.get_display_info()
             print(f"\n【宗门管理】 财富: {info['wealth']} 灵石")
             print(f"1. 扩建灵库 (当前上限: {info['wealth_max']}) - 消耗 10 灵石")
             print(f"2. 扩建洞府 (当前上限: {info['disciples_max']}) - 消耗 10 灵石")
@@ -159,15 +155,15 @@ class GameCLI:
             
             if choice in ["1", "2"]:
                 cost = 10
-                if self.player.wealth >= cost:
-                    self.player.wealth -= cost
+                if self.game_state.wealth >= cost:
+                    self.game_state.wealth -= cost
                     if choice == "1":
-                        self.player.sect_data["vault_level"] += 1
-                        self.player.sect_data["vault_max"] += 100
+                        self.game_state.sect_data["vault_level"] += 1
+                        self.game_state.sect_data["vault_max"] += 100
                         print("灵库扩建成功！上限+100")
                     else:
-                        self.player.sect_data["cave_level"] += 1
-                        self.player.sect_data["cave_max"] += 5
+                        self.game_state.sect_data["cave_level"] += 1
+                        self.game_state.sect_data["cave_max"] += 5
                         print("洞府扩建成功！上限+5")
                 else:
                     print(f"灵石不足，扩建需要 {cost} 灵石。")
@@ -178,20 +174,20 @@ class GameCLI:
         
         # 1. 模拟弟子工作产出
         # 挖矿产出
-        mining_gain = self.player.sect_data["disciples_mining"] * 2
+        mining_gain = self.game_state.sect_data["disciples_mining"] * 2
         if mining_gain > 0:
-            self.player.gain_wealth(mining_gain)
+            self.game_state.gain_wealth(mining_gain)
             print(f"弟子挖矿产出: {mining_gain} 灵石")
 
         # 招募产出
-        recruiting_disciples = self.player.sect_data["disciples_recruiting"]
+        recruiting_disciples = self.game_state.sect_data["disciples_recruiting"]
         if recruiting_disciples > 0:
             new_disciples = 0
             for _ in range(recruiting_disciples):
-                if self.player.sect_data["disciples_total"] < self.player.sect_data["cave_max"]:
+                if self.game_state.sect_data["disciples_total"] < self.game_state.sect_data["cave_max"]:
                     if random.random() < 0.03: # 3% 几率招募成功
                         new_disciples += 1
-                        self.player.sect_data["disciples_total"] += 1
+                        self.game_state.sect_data["disciples_total"] += 1
             if new_disciples > 0:
                 print(f"招募弟子成功：新增 {new_disciples} 名弟子！")
             else:
@@ -260,7 +256,7 @@ class GameCLI:
                 print(f"槽位 {i}")
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
-                res = save_game(self.player, self.time_system, self.event_manager, int(slot))
+                res = save_game(self.game_state, self.time_system, self.event_manager, int(slot))
                 print(f"\n{res['message']}")
         elif choice == "2":
             files = get_save_files()
@@ -281,7 +277,7 @@ class GameCLI:
 
     def _apply_save_data(self, data: dict):
         """恢复存档数据"""
-        self.player = Player.from_dict(data.get("player", {}))
+        self.game_state = GameState.from_dict(data.get("player", {}))
         self.time_system = TimeSystem.from_dict(data.get("time", {}))
         event_data = data.get("event_manager", {})
         self.event_manager.last_secret_realm_year = event_data.get("last_secret_realm_year", 0)
