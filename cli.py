@@ -13,11 +13,42 @@ class GameCLI:
         self.player = Player("云逸")
         self.time_system = TimeSystem()
         self.event_manager = EventManager()
-        # self.npc_manager = NPCManager()
         
         self.turn_count = 1
-        self.running = True
-        
+
+    def run_turn(self):
+        """
+
+        玩家返回主菜单时return True
+        """
+        self._start_turn()
+
+        # 玩家操作阶段
+        while True:
+            print("\n【操作菜单】")
+            print("1. 弟子管理")
+            print("2. 宗门建设")
+            print("5. 存档/读档")
+            print("9. 结束回合")
+            print("0. 返回主菜单")
+
+            choice = input("\n请选择操作: ").strip()
+
+            if choice == "1":
+                self._manage_disciples()
+            elif choice == "2":
+                self._manage_sect()
+            elif choice == "5":
+                self._handle_save_load()
+            elif choice == "9":
+                self._end_player_turn()
+                break
+            elif choice == "0":
+                return True
+            else:
+                print("无效输入。")
+        return False
+
     def display_status(self):
         """显示玩家当前状态"""
         info = self.player.get_display_info()
@@ -175,13 +206,8 @@ class GameCLI:
         """游戏主界面与主循环"""
         while True:
             os.system("cls")
-            print("="*50)
-            print("      欢迎来到《仙宗 - 修仙模拟器》")
-            print("="*50)
-            print("1. 开始新游戏")
-            print("2. 读取存档")
-            print("0. 退出游戏")
-            print("="*50)
+            print("="*50,"\n      欢迎来到《仙宗 - 修仙模拟器》\n","="*50)
+            print("1. 开始新游戏\n2. 读取存档\n0. 退出游戏\n","="*50)
             
             menu_choice = input("\n请选择操作: ").strip()
             
@@ -201,7 +227,6 @@ class GameCLI:
                     res = load_game(f"saves/save_{slot}.json")
                     if res["success"]:
                         self._apply_save_data(res["data"])
-                        self.running = True
                         print("\n读档成功！")
                         input("按回车开始游戏...")
                     else:
@@ -219,36 +244,9 @@ class GameCLI:
                 continue
 
             # 游戏主循环
-            while self.running:
-                self._start_turn()
-                
-                # 玩家操作阶段
-                turn_active = True
-                while turn_active:
-                    print("\n【操作菜单】")
-                    print("1. 弟子管理")
-                    print("2. 宗门建设")
-                    print("5. 存档/读档")
-                    print("9. 结束回合")
-                    print("0. 返回主菜单")
-                    
-                    choice = input("\n请选择操作: ").strip()
-                    
-                    if choice == "1":
-                        self._manage_disciples()
-                    elif choice == "2":
-                        self._manage_sect()
-                    elif choice == "5":
-                        self._handle_save_load()
-                    elif choice == "9":
-                        self._end_player_turn()
-                        turn_active = False
-                    elif choice == "0":
-                        self.running = False
-                        turn_active = False
-                        print("正在返回主菜单...")
-                    else:
-                        print("无效输入。")
+            while True:
+                if self.run_turn():
+                    break
 
     def _handle_save_load(self):
         """处理存档读档"""
