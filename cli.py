@@ -1,10 +1,9 @@
 """仙宗 - 修仙模拟器 命令行版本"""
 import random
-import sys
+import os
 from core.player import Player
 from core.time_system import TimeSystem
 from events.special_events import EventManager
-from npc.npcs import NPCManager, Master, Merchant, Friend
 from core.save_system import save_game, load_game, get_save_files
 
 class GameCLI:
@@ -14,7 +13,7 @@ class GameCLI:
         self.player = Player("云逸")
         self.time_system = TimeSystem()
         self.event_manager = EventManager()
-        self.npc_manager = NPCManager()
+        # self.npc_manager = NPCManager()
         
         self.turn_count = 1
         self.running = True
@@ -24,10 +23,10 @@ class GameCLI:
         info = self.player.get_display_info()
         time_str = self.time_system.get_full_time_string()
         
-        print("\n" + "="*50)
-        print(f"【{info['name']}】 {info['realm']} (修为: {info['cultivation']}/{info['next_realm']})")
-        print(f"【时间】 {time_str}")
-        print(f"【状态】 生命: {info['health']}/{info['health_max']} | 灵力: {info['spiritual_power']}/{info['spiritual_power_max']}")
+        print("="*50)
+        # print(f"【{info['name']}】 {info['realm']} (修为: {info['cultivation']}/{info['next_realm']})")
+        # print(f"【时间】 {time_str}")
+        # print(f"【状态】 生命: {info['health']}/{info['health_max']} | 灵力: {info['spiritual_power']}/{info['spiritual_power_max']}")
         print(f"【财富】 灵石: {info['wealth']}/{info['wealth_max']}")
         print(f"【弟子】 总数: {info['disciples_total']}/{info['disciples_max']} | 空闲: {info['idle_disciples']}")
         print(f"【分配】 挖矿: {info['sect']['disciples_mining']} | 招募: {info['sect']['disciples_recruiting']}")
@@ -37,7 +36,9 @@ class GameCLI:
 
     def _start_turn(self):
         """开始新回合"""
-        print(f"\n>>> --- 第 {self.turn_count} 轮开始 --- <<<")
+        os.system("cls")
+        self.display_status()
+        print(f"\n --- 第 {self.turn_count} 年 ---")
         
         # 1. 回合开始 --> LLM生成随机事件
         event = self.event_manager.check_events(
@@ -74,63 +75,6 @@ class GameCLI:
         
         if result.get("trigger_dialogue"):
             self._start_dialogue(result["trigger_dialogue"])
-
-    def _start_dialogue(self, npc_id: str):
-        """开始与NPC对话"""
-        npc = self.npc_manager.get_npc(npc_id)
-        if not npc: return
-        
-        print(f"\n与 {npc.get_display_name()} 对话中...")
-        
-        while True:
-            options = ["告辞"]
-            if npc_id == "master":
-                options = ["请求指点", "寻求赠予", "告辞"]
-            elif npc_id == "merchant":
-                options = ["查看商品", "购买物品", "告辞"]
-            elif npc_id == "friend":
-                options = ["切磋交流", "闲聊", "告辞"]
-            
-            print("\n对话选项：")
-            for i, opt in enumerate(options):
-                print(f"{i}. {opt}")
-                
-            choice = input("\n你的选择: ").strip()
-            if not choice.isdigit() or not (0 <= int(choice) < len(options)):
-                print("无效选择。")
-                continue
-                
-            action = options[int(choice)]
-            if action == "告辞":
-                print(f"你告别了{npc.name}。")
-                break
-                
-            if npc_id == "master":
-                if action == "请求指点":
-                    res = npc.give_guidance(self.player)
-                    print(f"\n{res['message']}")
-                elif action == "寻求赠予":
-                    res = npc.give_gift(self.player)
-                    print(f"\n{res['message']}")
-            
-            elif npc_id == "merchant":
-                if action == "查看商品":
-                    items = npc.get_shop_items()
-                    print("\n【商店商品】")
-                    for it in items:
-                        print(f"- {it['name']}: {it['price']}灵石 ({it['desc']})")
-                elif action == "购买物品":
-                    item_name = input("输入要购买的物品名称: ").strip()
-                    res = npc.buy_item(self.player, item_name)
-                    print(f"\n{res['message']}")
-            
-            elif npc_id == "friend":
-                if action == "切磋交流":
-                    res = npc.spar(self.player)
-                    print(f"\n{res['message']}")
-                elif action == "闲聊":
-                    res = npc.chat(self.player)
-                    print(f"\n{res['message']}")
 
     def _manage_disciples(self):
         """弟子管理"""
@@ -197,42 +141,6 @@ class GameCLI:
                 else:
                     print(f"灵石不足，扩建需要 {cost} 灵石。")
 
-    def _manage_inventory(self):
-        """背包管理"""
-        while True:
-            print("\n【我的背包】")
-            if not self.player.inventory:
-                print("背包空空如也。")
-                # 依然允许使用灵石
-                print(f"0. 使用灵石恢复灵力 (消耗1灵石, 当前: {self.player.wealth})")
-                print("m. 返回")
-            else:
-                items = list(self.player.inventory.items())
-                for i, (name, count) in enumerate(items):
-                    print(f"{i + 1}. {name} x{count}")
-                print(f"0. 使用灵石恢复灵力 (消耗1灵石, 当前: {self.player.wealth})")
-                print("m. 返回")
-            
-            choice = input("\n选择编号进行使用 或 输入 m 返回: ").strip()
-            if choice.lower() == 'm': break
-            
-            if choice == "0":
-                if self.player.use_spirit_stone(10):
-                    print("使用灵石恢复了10点灵力。")
-                else:
-                    print("灵石不足！")
-            elif choice.isdigit():
-                idx = int(choice) - 1
-                items = list(self.player.inventory.items())
-                if 0 <= idx < len(items):
-                    item_name = items[idx][0]
-                    # 借用 Merchant 类的使用逻辑
-                    merchant = self.npc_manager.get_npc("merchant")
-                    res = merchant.use_item(self.player, item_name)
-                    print(f"\n{res['message']}")
-                else:
-                    print("无效编号。")
-
     def _end_player_turn(self):
         """结束回合"""
         print("\n回合结束，结算中...")
@@ -268,7 +176,6 @@ class GameCLI:
         print("欢迎来到《仙宗 - 修仙模拟器》命令行版！")
         
         while self.running:
-            self.display_status()
             self._start_turn()
             
             # 玩家操作阶段
@@ -277,8 +184,8 @@ class GameCLI:
                 print("\n【操作菜单】")
                 print("1. 弟子管理")
                 print("2. 宗门建设")
-                print("3. 与人交流")
-                print("4. 查看背包/使用物品")
+                # print("3. 与人交流")
+                # print("4. 查看背包/使用物品")
                 print("5. 存档/读档")
                 print("9. 结束回合")
                 print("0. 退出游戏")
@@ -289,16 +196,16 @@ class GameCLI:
                     self._manage_disciples()
                 elif choice == "2":
                     self._manage_sect()
-                elif choice == "3":
-                    print("\n你想找谁？")
-                    npcs = self.npc_manager.get_all_npcs()
-                    for i, npc in enumerate(npcs):
-                        print(f"{i}. {npc.get_display_name()}")
-                    npc_choice = input("选择编号 (或直接回车取消): ").strip()
-                    if npc_choice.isdigit() and 0 <= int(npc_choice) < len(npcs):
-                        self._start_dialogue(npcs[int(npc_choice)].npc_id)
-                elif choice == "4":
-                    self._manage_inventory()
+                # elif choice == "3":
+                #     print("\n你想找谁？")
+                #     npcs = self.npc_manager.get_all_npcs()
+                #     for i, npc in enumerate(npcs):
+                #         print(f"{i}. {npc.get_display_name()}")
+                #     npc_choice = input("选择编号 (或直接回车取消): ").strip()
+                #     if npc_choice.isdigit() and 0 <= int(npc_choice) < len(npcs):
+                #         self._start_dialogue(npcs[int(npc_choice)].npc_id)
+                # elif choice == "4":
+                #     self._manage_inventory()
                 elif choice == "5":
                     self._handle_save_load()
                 elif choice == "9":
@@ -348,6 +255,99 @@ class GameCLI:
         self.time_system = TimeSystem.from_dict(data.get("time", {}))
         event_data = data.get("event_manager", {})
         self.event_manager.last_secret_realm_year = event_data.get("last_secret_realm_year", 0)
+
+    # def _start_dialogue(self, npc_id: str):
+    #     """开始与NPC对话"""
+    #     npc = self.npc_manager.get_npc(npc_id)
+    #     if not npc: return
+    #
+    #     print(f"\n与 {npc.get_display_name()} 对话中...")
+    #
+    #     while True:
+    #         options = ["告辞"]
+    #         if npc_id == "master":
+    #             options = ["请求指点", "寻求赠予", "告辞"]
+    #         elif npc_id == "merchant":
+    #             options = ["查看商品", "购买物品", "告辞"]
+    #         elif npc_id == "friend":
+    #             options = ["切磋交流", "闲聊", "告辞"]
+    #
+    #         print("\n对话选项：")
+    #         for i, opt in enumerate(options):
+    #             print(f"{i}. {opt}")
+    #
+    #         choice = input("\n你的选择: ").strip()
+    #         if not choice.isdigit() or not (0 <= int(choice) < len(options)):
+    #             print("无效选择。")
+    #             continue
+    #
+    #         action = options[int(choice)]
+    #         if action == "告辞":
+    #             print(f"你告别了{npc.name}。")
+    #             break
+    #
+    #         if npc_id == "master":
+    #             if action == "请求指点":
+    #                 res = npc.give_guidance(self.player)
+    #                 print(f"\n{res['message']}")
+    #             elif action == "寻求赠予":
+    #                 res = npc.give_gift(self.player)
+    #                 print(f"\n{res['message']}")
+    #
+    #         elif npc_id == "merchant":
+    #             if action == "查看商品":
+    #                 items = npc.get_shop_items()
+    #                 print("\n【商店商品】")
+    #                 for it in items:
+    #                     print(f"- {it['name']}: {it['price']}灵石 ({it['desc']})")
+    #             elif action == "购买物品":
+    #                 item_name = input("输入要购买的物品名称: ").strip()
+    #                 res = npc.buy_item(self.player, item_name)
+    #                 print(f"\n{res['message']}")
+    #
+    #         elif npc_id == "friend":
+    #             if action == "切磋交流":
+    #                 res = npc.spar(self.player)
+    #                 print(f"\n{res['message']}")
+    #             elif action == "闲聊":
+    #                 res = npc.chat(self.player)
+    #                 print(f"\n{res['message']}")
+
+    # def _manage_inventory(self):
+    #     """背包管理"""
+    #     while True:
+    #         print("\n【我的背包】")
+    #         if not self.player.inventory:
+    #             print("背包空空如也。")
+    #             # 依然允许使用灵石
+    #             print(f"0. 使用灵石恢复灵力 (消耗1灵石, 当前: {self.player.wealth})")
+    #             print("m. 返回")
+    #         else:
+    #             items = list(self.player.inventory.items())
+    #             for i, (name, count) in enumerate(items):
+    #                 print(f"{i + 1}. {name} x{count}")
+    #             print(f"0. 使用灵石恢复灵力 (消耗1灵石, 当前: {self.player.wealth})")
+    #             print("m. 返回")
+    #
+    #         choice = input("\n选择编号进行使用 或 输入 m 返回: ").strip()
+    #         if choice.lower() == 'm': break
+    #
+    #         if choice == "0":
+    #             if self.player.use_spirit_stone(10):
+    #                 print("使用灵石恢复了10点灵力。")
+    #             else:
+    #                 print("灵石不足！")
+    #         elif choice.isdigit():
+    #             idx = int(choice) - 1
+    #             items = list(self.player.inventory.items())
+    #             if 0 <= idx < len(items):
+    #                 item_name = items[idx][0]
+    #                 # 借用 Merchant 类的使用逻辑
+    #                 merchant = self.npc_manager.get_npc("merchant")
+    #                 res = merchant.use_item(self.player, item_name)
+    #                 print(f"\n{res['message']}")
+    #             else:
+    #                 print("无效编号。")
 
 if __name__ == "__main__":
     game = GameCLI()
