@@ -172,51 +172,83 @@ class GameCLI:
         input("\n按回车进入下一回合...")
 
     def run(self):
-        """游戏主循环"""
-        print("欢迎来到《仙宗 - 修仙模拟器》命令行版！")
-        
-        while self.running:
-            self._start_turn()
+        """游戏主界面与主循环"""
+        while True:
+            os.system("cls")
+            print("="*50)
+            print("      欢迎来到《仙宗 - 修仙模拟器》")
+            print("="*50)
+            print("1. 开始新游戏")
+            print("2. 读取存档")
+            print("0. 退出游戏")
+            print("="*50)
             
-            # 玩家操作阶段
-            turn_active = True
-            while turn_active:
-                print("\n【操作菜单】")
-                print("1. 弟子管理")
-                print("2. 宗门建设")
-                # print("3. 与人交流")
-                # print("4. 查看背包/使用物品")
-                print("5. 存档/读档")
-                print("9. 结束回合")
-                print("0. 退出游戏")
-                
-                choice = input("\n请选择操作: ").strip()
-                
-                if choice == "1":
-                    self._manage_disciples()
-                elif choice == "2":
-                    self._manage_sect()
-                # elif choice == "3":
-                #     print("\n你想找谁？")
-                #     npcs = self.npc_manager.get_all_npcs()
-                #     for i, npc in enumerate(npcs):
-                #         print(f"{i}. {npc.get_display_name()}")
-                #     npc_choice = input("选择编号 (或直接回车取消): ").strip()
-                #     if npc_choice.isdigit() and 0 <= int(npc_choice) < len(npcs):
-                #         self._start_dialogue(npcs[int(npc_choice)].npc_id)
-                # elif choice == "4":
-                #     self._manage_inventory()
-                elif choice == "5":
-                    self._handle_save_load()
-                elif choice == "9":
-                    self._end_player_turn()
-                    turn_active = False
-                elif choice == "0":
-                    self.running = False
-                    turn_active = False
-                    print("退出游戏。")
+            menu_choice = input("\n请选择操作: ").strip()
+            
+            if menu_choice == "1":
+                self.__init__()
+            elif menu_choice == "2":
+                files = get_save_files()
+                if not files:
+                    print("\n[系统] 没有发现任何存档文件。")
+                    input("按回车继续...")
+                    continue
+                print("\n【存档列表】")
+                for f in files: print(f"- {f}")
+                slot = input("\n选择读档编号 (1-3) 或输入 0 返回: ").strip()
+                if slot == "0": continue
+                if slot in ["1", "2", "3"]:
+                    res = load_game(f"saves/save_{slot}.json")
+                    if res["success"]:
+                        self._apply_save_data(res["data"])
+                        self.running = True
+                        print("\n读档成功！")
+                        input("按回车开始游戏...")
+                    else:
+                        print(f"\n{res['message']}")
+                        input("按回车继续...")
+                        continue
                 else:
-                    print("无效输入。")
+                    print("\n无效输入。")
+                    input("按回车继续...")
+                    continue
+            elif menu_choice == "0":
+                print("\n感谢游玩，江湖再见！")
+                break
+            else:
+                continue
+
+            # 游戏主循环
+            while self.running:
+                self._start_turn()
+                
+                # 玩家操作阶段
+                turn_active = True
+                while turn_active:
+                    print("\n【操作菜单】")
+                    print("1. 弟子管理")
+                    print("2. 宗门建设")
+                    print("5. 存档/读档")
+                    print("9. 结束回合")
+                    print("0. 返回主菜单")
+                    
+                    choice = input("\n请选择操作: ").strip()
+                    
+                    if choice == "1":
+                        self._manage_disciples()
+                    elif choice == "2":
+                        self._manage_sect()
+                    elif choice == "5":
+                        self._handle_save_load()
+                    elif choice == "9":
+                        self._end_player_turn()
+                        turn_active = False
+                    elif choice == "0":
+                        self.running = False
+                        turn_active = False
+                        print("正在返回主菜单...")
+                    else:
+                        print("无效输入。")
 
     def _handle_save_load(self):
         """处理存档读档"""
