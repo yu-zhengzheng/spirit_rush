@@ -1,6 +1,5 @@
 """玩家类"""
 from typing import Tuple
-from config.settings import REALMS, PLAYER_INITIAL
 
 
 class GameState:
@@ -59,6 +58,7 @@ class GameState:
     def to_dict(self) -> dict:
         """序列化为字典"""
         return {
+            "game_time": self.game_time,
             "sect_data": self.sect_data,
             "buffs": self.buffs,
             "inventory": self.inventory,
@@ -67,23 +67,10 @@ class GameState:
     @classmethod
     def from_dict(cls, data: dict) -> "GameState":
         """从字典反序列化"""
-        player = cls(data.get("name"))
-        player.cultivation = data.get("cultivation", 0)
-        player.spiritual_power = data.get("spiritual_power", 100)
-        player.spiritual_power_max = data.get("spiritual_power_max", 100)
-        player.health = data.get("health", 100)
-        player.health_max = data.get("health_max", 100)
-        player.wealth = data.get("wealth", 100)
-        player.cultivation_count = data.get("cultivation_count", 0)
-        player.sect_data = data.get("sect_data", {
-            "disciples_mining": 0,
-            "disciples_recruiting": 0,
-            "vault_level": 1,
-            "cave_level": 1,
-            "disciples_total": 0,
-            "vault_max": 100,
-            "cave_max": 5
-        })
-        player.buffs = data.get("buffs", {})
-        player.inventory = data.get("inventory", {})
-        return player
+        state = cls()
+        state.game_time = data.get("game_time", 0)
+        if "sect_data" in data:
+            state.sect_data.update(data["sect_data"])
+        state.buffs = data.get("buffs", {})
+        state.inventory = data.get("inventory", {})
+        return state

@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
-SAVE_DIR = "saves"
+from config.settings import SAVE_DIR
 
 
 def ensure_save_dir():
@@ -27,10 +27,8 @@ def get_save_files() -> list:
                     saves.append({
                         "filename": filename,
                         "filepath": filepath,
-                        "player_name": data.get("player", {}).get("name", "未知"),
-                        "realm": data.get("player", {}).get("realm", "练气期"),
-                        "save_time": data.get("save_time", "未知时间"),
-                        "game_time": data.get("time", {})
+                        "save_time": data.get("save_time", "未知"),
+                        "game_time": data["state"].get("game_time", {})
                     })
             except (json.JSONDecodeError, IOError):
                 continue
@@ -40,36 +38,17 @@ def get_save_files() -> list:
     return saves
 
 
-def save_game(player, event_manager, slot: int = 1) -> dict:
+def save_game(state, event_manager, slot: int = 1) -> dict:
     """
     保存游戏
     返回: {"success": bool, "message": str, "filepath": str}
     """
     ensure_save_dir()
     
-    # 获取当前境界
-    realm = player.realm
-    
     # 构建存档数据
     save_data = {
         "save_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "player": {
-            "name": player.name,
-            "realm": realm,
-            "cultivation": player.cultivation,
-            "spiritual_power": player.spiritual_power,
-            "spiritual_power_max": player.spiritual_power_max,
-            "health": player.health,
-            "health_max": player.health_max,
-            "wealth": player.wealth,
-            "cultivation_count": player.cultivation_count,
-            "sect_data": player.sect_data,
-            "buffs": player.buffs,
-            "inventory": player.inventory,
-        },
-        "event_manager": {
-            "last_secret_realm_year": event_manager.last_secret_realm_year,
-        }
+        "state": state,
     }
     
     # 生成文件名

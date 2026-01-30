@@ -4,6 +4,7 @@ import os
 from core.game_state import GameState
 from events.special_events import EventManager
 from core.save_system import save_game, load_game, get_save_files
+from config.settings import *
 
 class GameCLI:
     """游戏命令行类"""
@@ -11,8 +12,6 @@ class GameCLI:
     def __init__(self):
         self.state = GameState()
         self.event_manager = EventManager()
-        
-        self.turn_count = 1
 
     def run_turn(self):
         """
@@ -179,7 +178,7 @@ class GameCLI:
             new_disciples = 0
             for _ in range(recruiting_disciples):
                 if self.state.sect_data["disciples_total"] < self.state.max_disciples:
-                    if random.random() < 0.03: # 3% 几率招募成功
+                    if random.random() < RECRUITMENT_BASE_GAIN: # 3% 几率招募成功
                         new_disciples += 1
                         self.state.sect_data["disciples_total"] += 1
             if new_disciples > 0:
@@ -187,9 +186,8 @@ class GameCLI:
             else:
                 print("本轮未招募到新弟子。")
 
-        # 2. 回合数增加
-        self.turn_count += 1
         print("结算完成。")
+        print(self.state.to_dict())
         input("\n按回车进入下一回合...")
 
     def run(self):
@@ -204,29 +202,7 @@ class GameCLI:
             if menu_choice == "1":
                 self.__init__()
             elif menu_choice == "2":
-                files = get_save_files()
-                if not files:
-                    print("\n[系统] 没有发现任何存档文件。")
-                    input("按回车继续...")
-                    continue
-                print("\n【存档列表】")
-                for f in files: print(f"- {f}")
-                slot = input("\n选择读档编号 (1-3) 或输入 0 返回: ").strip()
-                if slot == "0": continue
-                if slot in ["1", "2", "3"]:
-                    res = load_game(f"saves/save_{slot}.json")
-                    if res["success"]:
-                        self._apply_save_data(res["data"])
-                        print("\n读档成功！")
-                        input("按回车开始游戏...")
-                    else:
-                        print(f"\n{res['message']}")
-                        input("按回车继续...")
-                        continue
-                else:
-                    print("\n无效输入。")
-                    input("按回车继续...")
-                    continue
+                self.load_save()
             elif menu_choice == "0":
                 print("\n感谢游玩，江湖再见！")
                 break
@@ -250,30 +226,38 @@ class GameCLI:
                 print(f"槽位 {i}")
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
-                res = save_game(self.state, self.event_manager, int(slot))
+                res = save_game(self.state.to_dict(), self.event_manager, int(slot))
                 print(f"\n{res['message']}")
+            else:
+                print("无效的输入")
         elif choice == "2":
-            files = get_save_files()
-            if not files:
-                print("没有发现存档文件。")
-                return
-            for f in files:
-                print(f"- {f}")
-            slot = input("输入存档编号 (1-3): ").strip()
-            if slot in ["1", "2", "3"]:
-                filepath = f"saves/save_{slot}.json"
-                res = load_game(filepath)
-                if res["success"]:
-                    self._apply_save_data(res["data"])
-                    print("\n读档成功！")
-                else:
-                    print(f"\n{res['message']}")
+            self.load_save()
+
+    def load_save(self):
+        files = get_save_files()
+        if not files:
+            print("没有发现存档文件。")
+            return
+        for f in files:
+            print(f"- 年份：{f['game_time']} 保存时间：{f['save_time']}")
+        slot = input("输入存档编号 (1-3): ").strip()
+        if slot in ["1", "2", "3"]:
+            filepath = f"saves/save_{slot}.json"
+            res = load_game(filepath)
+            print(res)
+            if res["success"]:
+                self._apply_save_data(res["data"]["state"])
+                print("\n读档成功！")
+            else:
+                print(f"\n{res['message']}")
+        else:
+            print("无效的输入")
 
     def _apply_save_data(self, data: dict):
         """恢复存档数据"""
-        self.state = GameState.from_dict(data.get("player", {}))
-        event_data = data.get("event_manager", {})
-        self.event_manager.last_secret_realm_year = event_data.get("last_secret_realm_year", 0)
+        self.state = GameState.from_dict(data)
+        # event_data = data.get("event_manager", {})
+        # self.event_manager.last_secret_realm_year = event_data.get("last_secret_realm_year", 0)
 
 
 if __name__ == "__main__":
