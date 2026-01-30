@@ -90,6 +90,7 @@ class EventManager:
         解决事件
         返回: 结果信息字典
         """
+        return None
         print(event)
         event_type = event["type"]
 

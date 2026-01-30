@@ -40,7 +40,7 @@ def get_save_files() -> list:
     return saves
 
 
-def save_game(player, time_system, event_manager, slot: int = 1) -> dict:
+def save_game(player, event_manager, slot: int = 1) -> dict:
     """
     保存游戏
     返回: {"success": bool, "message": str, "filepath": str}
@@ -67,7 +67,6 @@ def save_game(player, time_system, event_manager, slot: int = 1) -> dict:
             "buffs": player.buffs,
             "inventory": player.inventory,
         },
-        "time": time_system.to_dict(),
         "event_manager": {
             "last_secret_realm_year": event_manager.last_secret_realm_year,
         }
