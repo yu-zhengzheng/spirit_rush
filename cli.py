@@ -6,6 +6,47 @@ from events.special_events import EventManager
 from core.save_system import save_game, load_game, get_save_files
 from config.settings import *
 
+
+
+def LLM_invoke(message,tools=None):
+    payload = json.dumps({
+        "model": CHEAP_MODEL_ID,
+        "stream": False,
+        "messages": message,
+        "tools": tools,
+        "stream_options": {
+            "include_usage": True
+        }
+    })if tools else json.dumps({
+        "model": CHEAP_MODEL_ID,
+        "stream": False,
+        "messages": message,
+        "stream_options": {
+            "include_usage": True
+        }
+    })
+    # start_time = datetime.datetime.now()
+
+    CONNECTION.request("POST", "/api/v1/chat/completions", payload, HEADERS)
+    res = CONNECTION.getresponse()
+    obj = json.loads(res.read().decode('utf-8'))
+    # elapsed_time = datetime.datetime.now()-start_time
+    # log(obj)
+    # print("-"*100,f"\nexecuted in {elapsed_time.total_seconds():.4f} seconds")
+    # print("usage:",obj["usage"])
+    try:
+        content=obj["choices"][0]["message"]["content"]
+    except:
+        print("msg=",message)
+        print("obj=",obj)
+        content="胜算云API错误"
+    return content
+
+#test
+msg=[{"role": "user", "content": "你谁啊"}];print(LLM_invoke(msg))
+
+exit()
+
 class GameCLI:
     """游戏命令行类"""
     

@@ -1,5 +1,22 @@
 """游戏配置文件"""
+import json
+import http.client
 
+# API_KEY 配置
+with open("api_key.json", "rb") as f:
+   API_KEY=json.load(f)["胜算云"]
+
+# 模型配置
+CHEAP_MODEL_ID= "bytedance/doubao-seed-1.6-flash"
+
+# 连接配置
+CONNECTION = http.client.HTTPSConnection("router.shengsuanyun.com")
+HEADERS = {
+   'HTTP-Referer': 'https://www.postman.com',
+   'X-Title': 'Postman',
+   'Authorization': API_KEY,
+   'Content-Type': 'application/json'
+}
 
 #生产设置
 RECRUITMENT_BASE_GAIN=0.03
