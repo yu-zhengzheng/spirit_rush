@@ -88,13 +88,17 @@ class GameCLI:
             elif choice == "0":
                 return True
             else:
-                print("无效输入。")
+                self.state.log("无效输入。")
         return False
 
     def display_status(self):
         """显示玩家当前状态"""
         os.system("cls")
-        # info = self.game_state.get_display_info()
+        # 显示日志消息
+        if self.state.logs:
+            print("\n【最近日志】")
+            for log_msg in self.state.logs[-10:]:  # 只显示最近5条日志
+                print(f"  {log_msg}")
         print(f"\n --- 第 {self.state.game_time} 年 ---")
         print(self.state.sect_data)
         print("="*50)
@@ -139,6 +143,7 @@ class GameCLI:
             None
         )
         print(f"\n[结果] {result['message']}")
+        self.state.log(f"事件结果: {result['message']}")
         
         if result.get("trigger_dialogue"):
             self._start_dialogue(result["trigger_dialogue"])
@@ -164,9 +169,9 @@ class GameCLI:
                 if self.state.idle_disciples >= amount:
                     self.state.sect_data[f"disciples_{task}"] += amount
                     msg = "挖矿" if task == "mining" else "招募"
-                    print(f"成功派遣 {amount} 名弟子去{msg}。")
+                    self.state.log(f"成功派遣 {amount} 名弟子去{msg}。")
                 else:
-                    print("没有足够的空闲弟子！")
+                    self.state.log("没有足够的空闲弟子！")
             elif choice in ["3", "4"]:
                 task = "mining" if choice == "3" else "recruiting"
                 amount = input("输入召回人数: ").strip()
@@ -177,9 +182,9 @@ class GameCLI:
                     self.state.sect_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
                     self.display_status()
-                    print(f"成功召回 {amount} 名去{msg}的弟子。")
+                    self.state.log(f"成功召回 {amount} 名去{msg}的弟子。")
                 else:
-                    print("没有这么多正在工作的弟子！")
+                    self.state.log("没有这么多正在工作的弟子！")
 
     def _manage_sect(self):
         """宗门管理"""
@@ -200,12 +205,12 @@ class GameCLI:
                     if choice == "1":
                         self.state.sect_data["vault_level"] += 1
                         self.display_status()
-                        print("灵库扩建成功！上限+100")
+                        self.state.log("灵库扩建成功！上限+100")
                     else:
                         self.state.sect_data["cave_level"] += 1
-                        print("洞府扩建成功！上限+5")
+                        self.state.log("洞府扩建成功！上限+5")
                 else:
-                    print(f"灵石不足，扩建需要 {cost} 灵石。")
+                    self.state.log(f"灵石不足，扩建需要 {cost} 灵石。")
 
     def _end_player_turn(self):
         """结束回合"""
@@ -216,7 +221,7 @@ class GameCLI:
         mining_gain = self.state.sect_data["disciples_mining"] * 2
         if mining_gain > 0:
             self.state.gain_wealth(mining_gain)
-            print(f"弟子挖矿产出: {mining_gain} 灵石")
+            self.state.log(f"弟子挖矿产出: {mining_gain} 灵石")
 
         # 招募产出
         recruiting_disciples = self.state.sect_data["disciples_recruiting"]
@@ -228,9 +233,9 @@ class GameCLI:
                         new_disciples += 1
                         self.state.sect_data["disciples_total"] += 1
             if new_disciples > 0:
-                print(f"招募弟子成功：新增 {new_disciples} 名弟子！")
+                self.state.log(f"招募弟子成功：新增 {new_disciples} 名弟子！")
             else:
-                print("本轮未招募到新弟子。")
+                self.state.log("本轮未招募到新弟子。")
 
         print("结算完成。")
         print(self.state.to_dict())
@@ -273,9 +278,9 @@ class GameCLI:
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
                 res = save_game(self.state.to_dict(), self.event_manager, int(slot))
-                print(f"\n{res['message']}")
+                self.state.log(f"\n{res['message']}")
             else:
-                print("无效的输入")
+                self.state.log("无效的输入")
         elif choice == "2":
             self.load_save()
             self.display_status()
@@ -283,7 +288,7 @@ class GameCLI:
     def load_save(self):
         files = get_save_files()
         if not files:
-            print("没有发现存档文件。")
+            self.state.log("没有发现存档文件。")
             return
         for f in files:
             print(f"- 年份：{f['game_time']} 保存时间：{f['save_time']}")
@@ -294,11 +299,11 @@ class GameCLI:
             print(res)
             if res["success"]:
                 self._apply_save_data(res["data"]["state"])
-                print("\n读档成功！")
+                self.state.log("\n读档成功！")
             else:
-                print(f"\n{res['message']}")
+                self.state.log(f"\n{res['message']}")
         else:
-            print("无效的输入")
+                self.state.log("无效的输入")
 
     def _apply_save_data(self, data: dict):
         """恢复存档数据"""
