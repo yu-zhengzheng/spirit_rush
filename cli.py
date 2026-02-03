@@ -43,9 +43,9 @@ def LLM_invoke(message,tools=None):
     return content
 
 #test
-msg=[{"role": "user", "content": "你谁啊"}];print(LLM_invoke(msg))
+# msg=[{"role": "user", "content": "你谁啊"}];print(LLM_invoke(msg))
 
-exit()
+# exit()
 
 class GameCLI:
     """游戏命令行类"""
@@ -75,10 +75,13 @@ class GameCLI:
 
             if choice == "1":
                 self._manage_disciples()
+                self.display_status()
             elif choice == "2":
                 self._manage_sect()
+                self.display_status()
             elif choice == "5":
                 self._handle_save_load()
+                self.display_status()
             elif choice == "9":
                 self._end_player_turn()
                 break
@@ -90,7 +93,9 @@ class GameCLI:
 
     def display_status(self):
         """显示玩家当前状态"""
+        os.system("cls")
         # info = self.game_state.get_display_info()
+        print(f"\n --- 第 {self.state.game_time} 年 ---")
         print(self.state.sect_data)
         print("="*50)
         print(f"【财富】 灵石: {self.state.sect_data['wealth']}/{self.state.max_wealth}")
@@ -100,9 +105,7 @@ class GameCLI:
 
     def _start_turn(self):
         """开始新回合"""
-        os.system("cls")
         self.display_status()
-        print(f"\n --- 第 {self.state.game_time} 年 ---")
         
         # 1. 回合开始 --> LLM生成随机事件
         event = self.event_manager.check_events(
@@ -173,6 +176,7 @@ class GameCLI:
                 if current >= amount:
                     self.state.sect_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
+                    self.display_status()
                     print(f"成功召回 {amount} 名去{msg}的弟子。")
                 else:
                     print("没有这么多正在工作的弟子！")
@@ -195,6 +199,7 @@ class GameCLI:
                     self.state.sect_data['wealth'] -= cost
                     if choice == "1":
                         self.state.sect_data["vault_level"] += 1
+                        self.display_status()
                         print("灵库扩建成功！上限+100")
                     else:
                         self.state.sect_data["cave_level"] += 1
@@ -273,6 +278,7 @@ class GameCLI:
                 print("无效的输入")
         elif choice == "2":
             self.load_save()
+            self.display_status()
 
     def load_save(self):
         files = get_save_files()
