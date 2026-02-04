@@ -64,6 +64,7 @@ class GameCLI:
 
         # 玩家操作阶段
         while True:
+            self.refresh()
             print("\n【操作菜单】")
             print("1. 弟子管理")
             print("2. 宗门建设")
@@ -75,13 +76,13 @@ class GameCLI:
 
             if choice == "1":
                 self._manage_disciples()
-                self.display_status()
+                self.refresh()
             elif choice == "2":
                 self._manage_sect()
-                self.display_status()
+                self.refresh()
             elif choice == "5":
                 self._handle_save_load()
-                self.display_status()
+                self.refresh()
             elif choice == "9":
                 self._end_player_turn()
                 break
@@ -91,7 +92,7 @@ class GameCLI:
                 self.state.log("无效输入。")
         return False
 
-    def display_status(self):
+    def refresh(self):
         """显示玩家当前状态"""
         os.system("cls")
         print(f"\n --- 第 {self.state.game_time} 年 ---")
@@ -109,7 +110,7 @@ class GameCLI:
 
     def _start_turn(self):
         """开始新回合"""
-        self.display_status()
+        self.refresh()
         
         # 1. 回合开始 --> LLM生成随机事件
         event = self.event_manager.check_events(
@@ -149,6 +150,7 @@ class GameCLI:
     def _manage_disciples(self):
         """弟子管理"""
         while True:
+            self.refresh()
             print(f"\n【弟子管理】 总数: {self.state.sect_data['disciples_total']} | 空闲: {self.state.idle_disciples}")
             print(f"1. 派遣至 挖矿 (当前: {self.state.sect_data['disciples_mining']})")
             print(f"2. 派遣至 招募 (当前: {self.state.sect_data['disciples_recruiting']})")
@@ -179,7 +181,7 @@ class GameCLI:
                 if current >= amount:
                     self.state.sect_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
-                    self.display_status()
+                    self.refresh()
                     self.state.log(f"成功召回 {amount} 名去{msg}的弟子。")
                 else:
                     self.state.log("没有这么多正在工作的弟子！")
@@ -187,6 +189,7 @@ class GameCLI:
     def _manage_sect(self):
         """宗门管理"""
         while True:
+            self.refresh()
             # info = self.game_state.get_display_info()
             print(f"\n【宗门管理】 财富: {self.state.sect_data['wealth']} 灵石")
             print(f"1. 扩建灵库 (当前上限: {self.state.max_wealth}) - 消耗 10 灵石")
@@ -202,7 +205,7 @@ class GameCLI:
                     self.state.sect_data['wealth'] -= cost
                     if choice == "1":
                         self.state.sect_data["vault_level"] += 1
-                        self.display_status()
+                        self.refresh()
                         self.state.log("灵库扩建成功！上限+100")
                     else:
                         self.state.sect_data["cave_level"] += 1
@@ -276,12 +279,12 @@ class GameCLI:
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
                 res = save_game(self.state.to_dict(), int(slot))
-                self.state.log(f"\n{res['message']}")
+                self.state.log(f"{res['message']}")
             else:
                 self.state.log("无效的输入")
         elif choice == "2":
             self.load_save()
-            self.display_status()
+            self.refresh()
 
     def load_save(self):
         """读取存档"""
@@ -304,9 +307,9 @@ class GameCLI:
                 try:
                     # 直接使用get_save_files()中已经读取的数据
                     self._apply_save_data(selected_file["data"]["state"])
-                    self.state.log(f"\n读档成功！从 {selected_file['filename']} 读取")
+                    self.state.log(f"读档成功！从 {selected_file['filename']} 读取")
                 except Exception as e:
-                    self.state.log(f"\n读档失败：{str(e)}")
+                    self.state.log(f"读档失败：{str(e)}")
             else:
                 self.state.log("无效的存档编号")
         else:

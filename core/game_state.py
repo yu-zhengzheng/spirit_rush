@@ -44,7 +44,7 @@ class GameState:
     def log(self, msg: str):
         """添加消息到日志，保持最多10条消息，自动添加游戏年份"""
         # 在消息前添加游戏年份
-        formatted_msg = f"第{self.game_time}年: {msg}"
+        formatted_msg = f"第{self.game_time}年 {msg}"
         self.logs.append(formatted_msg)
         # 如果消息数超过10条，删除最老的消息
         if len(self.logs) > 10:
