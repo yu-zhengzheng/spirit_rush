@@ -284,24 +284,33 @@ class GameCLI:
             self.display_status()
 
     def load_save(self):
+        """读取存档"""
         files = get_save_files()
         if not files:
             self.state.log("没有发现存档文件。")
             return
-        for f in files:
-            print(f"- 年份：{f['game_time']} 保存时间：{f['save_time']}")
-        slot = input("输入存档编号 (1-3): ").strip()
-        if slot in ["1", "2", "3"]:
-            filepath = f"saves/save_{slot}.json"
-            res = load_game(filepath)
-            print(res)
-            if res["success"]:
-                self._apply_save_data(res["data"]["state"])
-                self.state.log("\n读档成功！")
+        
+        print("\n【存档列表】")
+        # 按槽位号排序显示
+        for slot in sorted(files.keys()):
+            f = files[slot]
+            print(f"{slot}. 年份：{f['game_time']} 保存时间：{f['save_time']}")
+        
+        choice = input("\n选择要读取的存档编号: ").strip()
+        if choice.isdigit():
+            slot = int(choice)
+            if slot in files:
+                selected_file = files[slot]
+                try:
+                    # 直接使用get_save_files()中已经读取的数据
+                    self._apply_save_data(selected_file["data"]["state"])
+                    self.state.log(f"\n读档成功！从 {selected_file['filename']} 读取")
+                except Exception as e:
+                    self.state.log(f"\n读档失败：{str(e)}")
             else:
-                self.state.log(f"\n{res['message']}")
+                self.state.log("无效的存档编号")
         else:
-                self.state.log("无效的输入")
+            self.state.log("无效的输入")
 
     def _apply_save_data(self, data: dict):
         """恢复存档数据"""

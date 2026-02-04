@@ -13,28 +13,30 @@ def ensure_save_dir():
         os.makedirs(SAVE_DIR)
 
 
-def get_save_files() -> list:
+def get_save_files() -> dict:
     """获取所有存档文件列表"""
     ensure_save_dir()
-    saves = []
+    saves = {}
     
     for filename in os.listdir(SAVE_DIR):
         if filename.endswith(".json"):
             filepath = os.path.join(SAVE_DIR, filename)
             try:
+                # 从文件名提取槽位号
+                slot = int(filename.replace("save_", "").replace(".json", ""))
+                
                 with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    saves.append({
+                    saves[slot] = {
                         "filename": filename,
                         "filepath": filepath,
                         "save_time": data.get("save_time", "未知"),
-                        "game_time": data["state"].get("game_time", {})
-                    })
-            except (json.JSONDecodeError, IOError):
+                        "game_time": data["state"].get("game_time", {}),
+                        "data": data  # 包含完整的存档数据
+                    }
+            except (ValueError, json.JSONDecodeError, IOError):
                 continue
     
-    # 按保存时间排序
-    saves.sort(key=lambda x: x.get("save_time", ""), reverse=True)
     return saves
 
 
