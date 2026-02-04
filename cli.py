@@ -94,18 +94,18 @@ class GameCLI:
     def display_status(self):
         """显示玩家当前状态"""
         os.system("cls")
-        # 显示日志消息
-        if self.state.logs:
-            print("\n【最近日志】")
-            for log_msg in self.state.logs[-10:]:  # 只显示最近5条日志
-                print(f"  {log_msg}")
         print(f"\n --- 第 {self.state.game_time} 年 ---")
-        print(self.state.sect_data)
+        # print(self.state.sect_data)
         print("="*50)
         print(f"【财富】 灵石: {self.state.sect_data['wealth']}/{self.state.max_wealth}")
         print(f"【弟子】 总数: {self.state.sect_data['disciples_total']}/{self.state.max_disciples} | 空闲: {self.state.idle_disciples}")
         print(f"【分配】 挖矿: {self.state.sect_data['disciples_mining']} | 招募: {self.state.sect_data['disciples_recruiting']}")
         print("="*50)
+        # 显示日志消息
+        if self.state.logs:
+            print("\n【最近日志】")
+            for log_msg in self.state.logs[-10:]:  # 只显示最近5条日志
+                print(f"  {log_msg}")
 
     def _start_turn(self):
         """开始新回合"""

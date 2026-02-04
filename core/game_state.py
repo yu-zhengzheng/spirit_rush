@@ -70,20 +70,28 @@ class GameState:
 
     def to_dict(self) -> dict:
         """序列化为字典"""
-        return {
-            "game_time": self.game_time,
-            "sect_data": self.sect_data,
-            "buffs": self.buffs,
-            "inventory": self.inventory,
-        }
+        result = {}
+        # 获取所有非私有属性
+        for attr_name in dir(self):
+            if not attr_name.startswith('_') and not callable(getattr(self, attr_name)):
+                attr_value = getattr(self, attr_name)
+                # 跳过属性装饰器
+                if not isinstance(attr_value, property):
+                    print(attr_name)
+                    result[attr_name] = attr_value
+        return result
     
     @classmethod
     def from_dict(cls, data: dict) -> "GameState":
         """从字典反序列化"""
         state = cls()
-        state.game_time = data.get("game_time", 0)
-        if "sect_data" in data:
-            state.sect_data.update(data["sect_data"])
-        state.buffs = data.get("buffs", {})
-        state.inventory = data.get("inventory", {})
+        print("data:", data)
+        # 直接遍历字典中的键值对
+        for key, value in data.items():
+            if hasattr(state, key) and not key.startswith('_'):
+                # 检查是否为只读属性(property)
+                attr = getattr(type(state), key, None)
+                if not isinstance(attr, property):
+                    print("setattr:",state, key, value)
+                    setattr(state, key, value)
         return state
