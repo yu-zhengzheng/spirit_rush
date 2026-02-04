@@ -13,7 +13,7 @@ from config.settings import (
     EVENT_SECRET_REALM_MIN_REALM,
 )
 from core.game_state import GameState
-from core.time_system import TimeSystem
+# from core.time_system import TimeSystem
 
 
 class EventManager:
@@ -23,7 +23,7 @@ class EventManager:
         self.pending_event: Optional[dict] = None
         self.last_secret_realm_year = 0
     
-    def check_events(self, player: GameState, time_system: TimeSystem,
+    def check_events(self, player: GameState,
                      breakthrough: bool = False) -> Optional[dict]:
         """
         检查是否触发事件
@@ -85,7 +85,7 @@ class EventManager:
         }
 
     def resolve_event(self, event: dict, option_id: int,
-                      player: GameState, time_system: TimeSystem) -> dict:
+                      player: GameState) -> dict:
         """
         解决事件
         返回: 结果信息字典
@@ -158,7 +158,7 @@ class EventManager:
             }
 
     def _resolve_secret_realm(self, option_id: int, player: GameState,
-                              time_system: TimeSystem, year: int) -> dict:
+                              year: int) -> dict:
         """解决秘境开启事件"""
         if option_id == 1:  # 放弃
             return {
@@ -167,7 +167,7 @@ class EventManager:
             }
         
         # 进入秘境
-        time_system.pass_time(EVENT_SECRET_REALM_TIME_COST)
+        # time_system.pass_time(EVENT_SECRET_REALM_TIME_COST)
         self.last_secret_realm_year = year
         
         # 随机遭遇

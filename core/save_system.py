@@ -38,7 +38,7 @@ def get_save_files() -> list:
     return saves
 
 
-def save_game(state, event_manager, slot: int = 1) -> dict:
+def save_game(state, slot: int = 1) -> dict:
     """
     保存游戏
     返回: {"success": bool, "message": str, "filepath": str}

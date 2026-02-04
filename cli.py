@@ -114,7 +114,6 @@ class GameCLI:
         # 1. 回合开始 --> LLM生成随机事件
         event = self.event_manager.check_events(
             self.state,
-            None,
             False # 回合开始触发
         )
 
@@ -139,8 +138,7 @@ class GameCLI:
         result = self.event_manager.resolve_event(
             event,
             option_id,
-            self.state,
-            None
+            self.state
         )
         print(f"\n[结果] {result['message']}")
         self.state.log(f"事件结果: {result['message']}")
@@ -277,7 +275,7 @@ class GameCLI:
                 print(f"槽位 {i}")
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
-                res = save_game(self.state.to_dict(), self.event_manager, int(slot))
+                res = save_game(self.state.to_dict(), int(slot))
                 self.state.log(f"\n{res['message']}")
             else:
                 self.state.log("无效的输入")
