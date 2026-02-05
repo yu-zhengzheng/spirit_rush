@@ -1,9 +1,33 @@
 """游戏配置文件"""
+import json
+import http.client
+
+# API_KEY 配置
+with open("api_key.json", "rb") as f:
+   API_KEY=json.load(f)["胜算云"]
+
+# 模型配置
+CHEAP_MODEL_ID= "bytedance/doubao-seed-1.6-flash"
+
+# 连接配置
+CONNECTION = http.client.HTTPSConnection("router.shengsuanyun.com")
+HEADERS = {
+   'HTTP-Referer': 'https://www.postman.com',
+   'X-Title': 'Postman',
+   'Authorization': API_KEY,
+   'Content-Type': 'application/json'
+}
+
+#生产设置
+RECRUITMENT_BASE_GAIN=0.03
+
+DISCIPLE_BASE_WAGE = 0.6
+
 
 # 屏幕设置
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
-FPS = 60
+SCREEN_WIDTH = 1600
+SCREEN_HEIGHT = 900
+FPS = 30
 TITLE = "仙宗 - 修仙模拟器"
 
 # 颜色定义
@@ -33,19 +57,19 @@ COLORS = {
 
 # 境界配置 (名称, 最小修为, 最大修为, 修炼系数)
 REALMS = [
-    ("练气期", 0, 999, 1.0),
-    ("筑基期", 1000, 4999, 1.5),
-    ("金丹期", 5000, 19999, 2.5),
-    ("元婴期", 20000, 99999, 4.0),
+    ("练气期", 0, 99, 1.0),
+    ("筑基期", 100, 999, 1.5),
+    ("金丹期", 1000, 9999, 2.5),
+    ("元婴期", 10000, 99999, 4.0),
     ("化神期", 100000, 499999, 6.0),
     ("渡劫期", 500000, float('inf'), 9.0),
 ]
 
 # 修炼配置
 CULTIVATION_BASE = 10  # 基础修为获取
-CULTIVATION_TIME_COST = 1  # 每次修炼消耗小时数
-CULTIVATION_RANDOM_MIN = 0.8  # 随机浮动下限
-CULTIVATION_RANDOM_MAX = 1.2  # 随机浮动上限
+CULTIVATION_TIME_COST = 100  # 每次修炼消耗小时数
+CULTIVATION_RANDOM_MIN = 0.5  # 随机浮动下限
+CULTIVATION_RANDOM_MAX = 1.5  # 随机浮动上限
 
 # 时间配置
 HOURS_PER_DAY = 24
@@ -60,11 +84,11 @@ PLAYER_INITIAL = {
     "spiritual_power_max": 100,
     "health": 100,
     "health_max": 100,
-    "wealth": 100,
+    "wealth": 10,
 }
 
 # 事件配置
-EVENT_SPIRITUAL_RAIN_CHANCE = 0.05  # 天降灵雨触发概率
+EVENT_SPIRITUAL_RAIN_CHANCE = 0.01  # 天降灵雨触发概率
 EVENT_SPIRITUAL_RAIN_MIN_CULTIVATION = 10  # 需要修炼次数
 EVENT_SPIRITUAL_RAIN_BUFF_COUNT = 3  # buff持续次数
 EVENT_SPIRITUAL_RAIN_MULTIPLIER = 2.0  # 修为倍率
@@ -114,8 +138,13 @@ SHOP_ITEMS = {
     "培元丹": {"price": 100, "effect": "restore_health", "value": 50, "desc": "恢复50点生命"},
 }
 
+# 灵石与挖矿配置
+SPIRIT_STONE_RECOVERY = 10  # 每个灵石恢复的灵力
+MINING_TIME_COST = 200        # 挖矿消耗的时间
+MINING_SPIRIT_STONE_GAIN = (1, 3) # 挖矿获得的灵石数量范围
+
 # UI配置
-HUD_RECT = (10, 10, 300, 180)  # HUD位置和大小
+HUD_RECT = (10, 10, 280, 220)  # HUD位置和大小
 BUTTON_HEIGHT = 50
 BUTTON_WIDTH = 120
 BUTTON_MARGIN = 10
@@ -124,3 +153,5 @@ BUTTON_MARGIN = 10
 FONT_SIZE_LARGE = 28
 FONT_SIZE_MEDIUM = 22
 FONT_SIZE_SMALL = 18
+
+SAVE_DIR = "saves"

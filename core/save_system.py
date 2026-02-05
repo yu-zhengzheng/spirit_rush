@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
-SAVE_DIR = "saves"
+from config.settings import SAVE_DIR
 
 
 def ensure_save_dir():
@@ -13,63 +13,44 @@ def ensure_save_dir():
         os.makedirs(SAVE_DIR)
 
 
-def get_save_files() -> list:
+def get_save_files() -> dict:
     """获取所有存档文件列表"""
     ensure_save_dir()
-    saves = []
+    saves = {}
     
     for filename in os.listdir(SAVE_DIR):
         if filename.endswith(".json"):
             filepath = os.path.join(SAVE_DIR, filename)
             try:
+                # 从文件名提取槽位号
+                slot = int(filename.replace("save_", "").replace(".json", ""))
+                
                 with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    saves.append({
+                    saves[slot] = {
                         "filename": filename,
                         "filepath": filepath,
-                        "player_name": data.get("player", {}).get("name", "未知"),
-                        "realm": data.get("player", {}).get("realm", "练气期"),
-                        "save_time": data.get("save_time", "未知时间"),
-                        "game_time": data.get("time", {})
-                    })
-            except (json.JSONDecodeError, IOError):
+                        "save_time": data.get("save_time", "未知"),
+                        "game_time": data["state"].get("game_time", {}),
+                        "data": data  # 包含完整的存档数据
+                    }
+            except (ValueError, json.JSONDecodeError, IOError):
                 continue
     
-    # 按保存时间排序
-    saves.sort(key=lambda x: x.get("save_time", ""), reverse=True)
     return saves
 
 
-def save_game(player, time_system, event_manager, slot: int = 1) -> dict:
+def save_game(state, slot: int = 1) -> dict:
     """
     保存游戏
     返回: {"success": bool, "message": str, "filepath": str}
     """
     ensure_save_dir()
     
-    # 获取当前境界
-    realm = player.realm
-    
     # 构建存档数据
     save_data = {
         "save_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "player": {
-            "name": player.name,
-            "realm": realm,
-            "cultivation": player.cultivation,
-            "spiritual_power": player.spiritual_power,
-            "spiritual_power_max": player.spiritual_power_max,
-            "health": player.health,
-            "health_max": player.health_max,
-            "wealth": player.wealth,
-            "cultivation_count": player.cultivation_count,
-            "buffs": player.buffs,
-            "inventory": player.inventory,
-        },
-        "time": time_system.to_dict(),
-        "event_manager": {
-            "last_secret_realm_year": event_manager.last_secret_realm_year,
-        }
+        "state": state,
     }
     
     # 生成文件名

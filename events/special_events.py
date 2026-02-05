@@ -12,8 +12,8 @@ from config.settings import (
     EVENT_SECRET_REALM_TIME_COST,
     EVENT_SECRET_REALM_MIN_REALM,
 )
-from core.player import Player
-from core.time_system import TimeSystem
+from core.game_state import GameState
+# from core.time_system import TimeSystem
 
 
 class EventManager:
@@ -23,29 +23,30 @@ class EventManager:
         self.pending_event: Optional[dict] = None
         self.last_secret_realm_year = 0
     
-    def check_events(self, player: Player, time_system: TimeSystem, 
+    def check_events(self, player: GameState,
                      breakthrough: bool = False) -> Optional[dict]:
         """
         检查是否触发事件
         返回: 事件信息字典 或 None
         """
         # 优先检查境界突破触发的心魔事件
-        if breakthrough:
-            return self._create_inner_demon_event()
-        
-        # 检查秘境开启 (金丹期以上，每年一次)
-        if (player.realm_index >= EVENT_SECRET_REALM_MIN_REALM and 
-            time_system.year > self.last_secret_realm_year and
-            time_system.month >= 6):  # 下半年触发
-            return self._create_secret_realm_event(time_system.year)
-        
-        # 检查天降灵雨 (修炼10次后，5%概率)
-        if player.cultivation_count >= EVENT_SPIRITUAL_RAIN_MIN_CULTIVATION:
-            if random.random() < EVENT_SPIRITUAL_RAIN_CHANCE:
-                return self._create_spiritual_rain_event()
-        
+        # if breakthrough:
+        #     print(self._create_inner_demon_event())
+        #     return self._create_inner_demon_event()
+        #
+        # # 检查秘境开启 (金丹期以上，每年一次)
+        # if (player.realm_index >= EVENT_SECRET_REALM_MIN_REALM and
+        #     time_system.year > self.last_secret_realm_year and
+        #     time_system.month >= 6):  # 下半年触发
+        #     return self._create_secret_realm_event(time_system.year)
+        #
+        # # 检查天降灵雨 (修炼10次后，5%概率)
+        # if player.cultivation_count >= EVENT_SPIRITUAL_RAIN_MIN_CULTIVATION:
+        #     if random.random() < EVENT_SPIRITUAL_RAIN_CHANCE:
+        #         return self._create_spiritual_rain_event()
+
         return None
-    
+
     def _create_spiritual_rain_event(self) -> dict:
         """创建天降灵雨事件"""
         return {
@@ -56,7 +57,7 @@ class EventManager:
                 {"id": 0, "text": "接受天道馈赠", "action": "accept"},
             ],
         }
-    
+
     def _create_inner_demon_event(self) -> dict:
         """创建心魔来袭事件"""
         return {
@@ -69,7 +70,7 @@ class EventManager:
                 {"id": 2, "text": "放任不管", "action": "ignore"},
             ],
         }
-    
+
     def _create_secret_realm_event(self, year: int) -> dict:
         """创建秘境开启事件"""
         return {
@@ -82,25 +83,27 @@ class EventManager:
             ],
             "year": year,
         }
-    
-    def resolve_event(self, event: dict, option_id: int, 
-                      player: Player, time_system: TimeSystem) -> dict:
+
+    def resolve_event(self, event: dict, option_id: int,
+                      player: GameState) -> dict:
         """
         解决事件
         返回: 结果信息字典
         """
+        return None
+        print(event)
         event_type = event["type"]
-        
+
         if event_type == "spiritual_rain":
             return self._resolve_spiritual_rain(player)
         elif event_type == "inner_demon":
             return self._resolve_inner_demon(option_id, player)
         elif event_type == "secret_realm":
             return self._resolve_secret_realm(option_id, player, time_system, event.get("year", 0))
-        
+
         return {"success": False, "message": "未知事件"}
-    
-    def _resolve_spiritual_rain(self, player: Player) -> dict:
+
+    def _resolve_spiritual_rain(self, player: GameState) -> dict:
         """解决天降灵雨事件"""
         # 添加buff: 未来3次修炼双倍收益
         player.add_buff(
@@ -109,14 +112,14 @@ class EventManager:
             EVENT_SPIRITUAL_RAIN_MULTIPLIER,
             EVENT_SPIRITUAL_RAIN_BUFF_COUNT
         )
-        
+
         return {
             "success": True,
             "message": f"你沐浴在灵雨之中，获得【天降灵雨】增益！\n接下来{EVENT_SPIRITUAL_RAIN_BUFF_COUNT}次修炼将获得双倍修为！",
             "buff_added": "天降灵雨",
         }
-    
-    def _resolve_inner_demon(self, option_id: int, player: Player) -> dict:
+
+    def _resolve_inner_demon(self, option_id: int, player: GameState) -> dict:
         """解决心魔来袭事件"""
         if option_id == 0:  # 强行压制
             if player.consume_spiritual_power(EVENT_INNER_DEMON_SPIRITUAL_COST):
@@ -135,7 +138,7 @@ class EventManager:
                     "message": f"灵力不足，心魔反噬！\n损失{lost}点修为！",
                     "cultivation_lost": lost,
                 }
-        
+
         elif option_id == 1:  # 寻求师傅帮助
             # 赠送定心丹
             player.add_item("定心丹", 1)
@@ -145,7 +148,7 @@ class EventManager:
                 "item_added": "定心丹",
                 "trigger_dialogue": "master",
             }
-        
+
         else:  # 放任不管
             lost = player.lose_cultivation(EVENT_INNER_DEMON_IGNORE_LOSS)
             return {
@@ -153,9 +156,9 @@ class EventManager:
                 "message": f"心魔肆虐，你的修为受损。\n损失{lost}点修为，但也算是一种历练。",
                 "cultivation_lost": lost,
             }
-    
-    def _resolve_secret_realm(self, option_id: int, player: Player, 
-                               time_system: TimeSystem, year: int) -> dict:
+
+    def _resolve_secret_realm(self, option_id: int, player: GameState,
+                              year: int) -> dict:
         """解决秘境开启事件"""
         if option_id == 1:  # 放弃
             return {
@@ -164,7 +167,7 @@ class EventManager:
             }
         
         # 进入秘境
-        time_system.pass_time(EVENT_SECRET_REALM_TIME_COST)
+        # time_system.pass_time(EVENT_SECRET_REALM_TIME_COST)
         self.last_secret_realm_year = year
         
         # 随机遭遇
