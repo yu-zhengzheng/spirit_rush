@@ -9,6 +9,7 @@ from config.settings import *
 
 
 def LLM_invoke(message,tools=None):
+    """调用LLM"""
     payload = json.dumps({
         "model": CHEAP_MODEL_ID,
         "stream": False,
@@ -89,7 +90,7 @@ class GameCLI:
             elif choice == "0":
                 return True
             else:
-                self.state.log_action("无效输入。")
+                self.state.log_message("无效输入。")
         return False
 
     def refresh(self):
@@ -103,9 +104,9 @@ class GameCLI:
         print(f"【分配】 挖矿: {self.state.sect_data['disciples_mining']} | 招募: {self.state.sect_data['disciples_recruiting']}")
         print("="*50)
         # 显示日志消息
-        if self.state.action_log:
+        if self.state.message_log:
             print("\n【最近日志】")
-            for log_msg in self.state.action_log[-10:]:  # 只显示最近5条日志
+            for log_msg in self.state.message_log[-10:]:  # 只显示最近5条日志
                 print(f"  {log_msg}")
 
     def _start_turn(self):
@@ -142,7 +143,7 @@ class GameCLI:
             self.state
         )
         print(f"\n[结果] {result['message']}")
-        self.state.log_action(f"事件结果: {result['message']}")
+        self.state.log_message(f"事件结果: {result['message']}")
         
         if result.get("trigger_dialogue"):
             self._start_dialogue(result["trigger_dialogue"])
@@ -169,9 +170,9 @@ class GameCLI:
                 if self.state.idle_disciples >= amount:
                     self.state.sect_data[f"disciples_{task}"] += amount
                     msg = "挖矿" if task == "mining" else "招募"
-                    self.state.log_action(f"成功派遣 {amount} 名弟子去{msg}。")
+                    self.state.log_message(f"成功派遣 {amount} 名弟子去{msg}。")
                 else:
-                    self.state.log_action("没有足够的空闲弟子！")
+                    self.state.log_message("没有足够的空闲弟子！")
             elif choice in ["3", "4"]:
                 task = "mining" if choice == "3" else "recruiting"
                 amount = input("输入召回人数: ").strip()
@@ -182,9 +183,9 @@ class GameCLI:
                     self.state.sect_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
                     self.refresh()
-                    self.state.log_action(f"成功召回 {amount} 名去{msg}的弟子。")
+                    self.state.log_message(f"成功召回 {amount} 名去{msg}的弟子。")
                 else:
-                    self.state.log_action("没有这么多正在工作的弟子！")
+                    self.state.log_message("没有这么多正在工作的弟子！")
 
     def _manage_sect(self):
         """宗门管理"""
@@ -204,14 +205,31 @@ class GameCLI:
                 if self.state.sect_data['wealth'] >= cost:
                     self.state.sect_data['wealth'] -= cost
                     if choice == "1":
+                        old_max_wealth = self.state.max_wealth
                         self.state.sect_data["vault_level"] += 1
+                        new_max_wealth = self.state.max_wealth
                         self.refresh()
-                        self.state.log_action("灵库扩建成功！上限+100")
+                        self.state.log_message(f"灵库扩建成功！上限 {old_max_wealth} → {new_max_wealth}")
                     else:
+                        old_max_disciples = self.state.max_disciples
                         self.state.sect_data["cave_level"] += 1
-                        self.state.log_action("洞府扩建成功！上限+5")
+                        new_max_disciples = self.state.max_disciples
+                        self.state.log_message(f"洞府扩建成功！上限 {old_max_disciples} → {new_max_disciples}")
                 else:
-                    self.state.log_action(f"灵石不足，扩建需要 {cost} 灵石。")
+                    self.state.log_message(f"灵石不足，扩建需要 {cost} 灵石。")
+
+    def LLM_summary(self):
+        """使用LLM总结当前游戏状态"""
+        messages = [
+            {"role": "system", "content": ("你是一名小说家，请根据当前游戏状态以及本年度的玩家行动日志，写一段仙侠风的简短的年度总结\n"
+                "当前游戏状态：\n"
+                f"{self.state.to_dict()}\n"
+                "玩家操作日志：\n"
+                f"{self.state.message_log[-10:]}\n" )},
+            # {"role": "user", "content": self.state.to_dict()}
+        ]
+        response = LLM_invoke(messages)
+        self.state.log_message(f"LLM 总结：{response}")
 
     def _end_player_turn(self):
         """结束回合"""
@@ -222,7 +240,7 @@ class GameCLI:
         mining_gain = self.state.sect_data["disciples_mining"] * 2
         if mining_gain > 0:
             self.state.gain_wealth(mining_gain)
-            self.state.log_action(f"弟子挖矿产出: {mining_gain} 灵石")
+            self.state.log_message(f"弟子挖矿产出: {mining_gain} 灵石")
 
         # 招募产出
         recruiting_disciples = self.state.sect_data["disciples_recruiting"]
@@ -234,10 +252,10 @@ class GameCLI:
                         new_disciples += 1
                         self.state.sect_data["disciples_total"] += 1
             if new_disciples > 0:
-                self.state.log_action(f"招募弟子成功：新增 {new_disciples} 名弟子！")
+                self.state.log_message(f"招募弟子成功：新增 {new_disciples} 名弟子！")
             else:
-                self.state.log_action("本轮未招募到新弟子。")
-
+                self.state.log_message("本轮未招募到新弟子。")
+        self.LLM_summary()
         print("结算完成。")
         input("\n按回车进入下一回合...")
 
@@ -278,9 +296,9 @@ class GameCLI:
             slot = input("选择存档槽位 (1-3): ").strip()
             if slot in ["1", "2", "3"]:
                 res = save_game(self.state.to_dict(), int(slot))
-                self.state.log_action(f"{res['message']}")
+                self.state.log_message(f"{res['message']}")
             else:
-                self.state.log_action("无效的输入")
+                self.state.log_message("无效的输入")
         elif choice == "2":
             self.load_save()
             self.refresh()
@@ -289,7 +307,7 @@ class GameCLI:
         """读取存档"""
         files = get_save_files()
         if not files:
-            self.state.log_action("没有发现存档文件。")
+            self.state.log_message("没有发现存档文件。")
             return
         
         print("\n【存档列表】")
@@ -306,13 +324,13 @@ class GameCLI:
                 try:
                     # 直接使用get_save_files()中已经读取的数据
                     self._apply_save_data(selected_file["data"]["state"])
-                    self.state.log_action(f"读档成功！从 {selected_file['filename']} 读取")
+                    self.state.log_message(f"读档成功！从 {selected_file['filename']} 读取")
                 except Exception as e:
-                    self.state.log_action(f"读档失败：{str(e)}")
+                    self.state.log_message(f"读档失败：{str(e)}")
             else:
-                self.state.log_action("无效的存档编号")
+                self.state.log_message("无效的存档编号")
         else:
-            self.state.log_action("无效的输入")
+            self.state.log_message("无效的输入")
 
     def _apply_save_data(self, data: dict):
         """恢复存档数据"""

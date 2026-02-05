@@ -45,3 +45,9 @@ MiniMax-M1.1 2026-02-05
 - 将“灵库扩建成功！上限+100”改为显示实际数值变化（动态获取扩建前后的 max_wealth）
 - 将“洞府扩建成功！上限+5”改为显示实际数值变化（动态获取扩建前后的 max_disciples）
 - 利用 game_state.py 中的 property 方法（max_wealth、max_disciples）实时计算当前上限
+
+MiniMax-M1.1 2026-02-05
+修改内容：cli.py 修复 GameCLI.LLM_summary() 方法
+- 将 self.state.to_dict() 转换为字符串格式，避免直接传递字典对象给 LLM
+- 将 log_message 改为 log_action，与代码中其他日志记录方式保持一致
+- 优化提示词结构，提取为独立变量提高可读性

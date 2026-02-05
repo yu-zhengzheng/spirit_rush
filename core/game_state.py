@@ -20,7 +20,7 @@ class GameState:
         }
 
         # 消息日志
-        self.action_log=[]
+        self.message_log=[]
 
         # 数据日志
         self.data_log=[]
@@ -46,14 +46,22 @@ class GameState:
             return True
         return False
 
-    def log_action(self, msg: str):
+    def log_message(self, msg: str):
         """添加消息到日志，保持最多10条消息，自动添加游戏年份"""
         # 在消息前添加游戏年份
         formatted_msg = f"第{self.game_time}年 {msg}"
-        self.action_log.append(formatted_msg)
+        self.message_log.append(formatted_msg)
         # 如果消息数超过10条，删除最老的消息
-        if len(self.action_log) > 100:
-            self.action_log.pop(0)
+        if len(self.message_log) > 100:
+            self.message_log.pop(0)
+
+    def log_data(self):
+        """添加数据到日志"""
+        pass
+        # 如果数据数超过10条，删除最老的消息
+        if len(self.data_log) > 100:
+            self.data_log.pop(0)
+
 
 
     def gain_wealth(self, amount: int):
@@ -82,7 +90,6 @@ class GameState:
                 attr_value = getattr(self, attr_name)
                 # 跳过属性装饰器
                 if not isinstance(attr_value, property):
-                    print(attr_name)
                     result[attr_name] = attr_value
         return result
     
@@ -97,6 +104,6 @@ class GameState:
                 # 检查是否为只读属性(property)
                 attr = getattr(type(state), key, None)
                 if not isinstance(attr, property):
-                    print("setattr:",state, key, value)
+                    print("setattr:", key, value)
                     setattr(state, key, value)
         return state
