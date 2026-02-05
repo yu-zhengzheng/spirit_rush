@@ -20,7 +20,12 @@ class GameState:
         }
 
         # 消息日志
-        self.logs=[]
+        self.action_log=[]
+
+        # 数据日志
+        self.data_log=[]
+
+        self.event_log=[]
 
         # Buff效果
         self.buffs = {}  # {buff_name: {remaining: int, multiplier: float}}
@@ -41,19 +46,19 @@ class GameState:
             return True
         return False
 
-    def log(self, msg: str):
+    def log_action(self, msg: str):
         """添加消息到日志，保持最多10条消息，自动添加游戏年份"""
         # 在消息前添加游戏年份
         formatted_msg = f"第{self.game_time}年 {msg}"
-        self.logs.append(formatted_msg)
+        self.action_log.append(formatted_msg)
         # 如果消息数超过10条，删除最老的消息
-        if len(self.logs) > 10:
-            self.logs.pop(0)
+        if len(self.action_log) > 100:
+            self.action_log.pop(0)
 
 
     def gain_wealth(self, amount: int):
         """增加财富/灵石"""
-        self.sect_data['wealth'] = min(self.sect_data.get("vault_max", 100), self.sect_data['wealth'] + amount)
+        self.sect_data['wealth'] = min(self.max_wealth, self.sect_data['wealth'] + amount)
     
     @property
     def idle_disciples(self) -> int:
