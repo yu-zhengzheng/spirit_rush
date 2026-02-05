@@ -255,6 +255,10 @@ class GameCLI:
                 self.state.log_message(f"招募弟子成功：新增 {new_disciples} 名弟子！")
             else:
                 self.state.log_message("本轮未招募到新弟子。")
+
+        # 弟子俸禄
+        self.state.sect_data["wealth"] -= self.state.sect_data["disciples_total"] * DISCIPLE_BASE_WAGE
+
         self.LLM_summary()
         print("结算完成。")
         input("\n按回车进入下一回合...")
