@@ -28,9 +28,14 @@ def LLM_invoke(message,tools=None):
     })
     # start_time = datetime.datetime.now()
 
-    CONNECTION.request("POST", "/api/v1/chat/completions", payload, HEADERS)
-    res = CONNECTION.getresponse()
-    obj = json.loads(res.read().decode('utf-8'))
+    try:
+        CONNECTION.request("POST", "/api/v1/chat/completions", payload, HEADERS)
+        res = CONNECTION.getresponse()
+        obj = json.loads(res.read().decode('utf-8'))
+    except Exception as e:
+        print("connection error:",e)
+        return None,False
+
     # elapsed_time = datetime.datetime.now()-start_time
     # log(obj)
     # print("-"*100,f"\nexecuted in {elapsed_time.total_seconds():.4f} seconds")
@@ -40,8 +45,8 @@ def LLM_invoke(message,tools=None):
     except:
         print("msg=",message)
         print("obj=",obj)
-        content="胜算云API错误"
-    return content
+        return None,False
+    return content,True
 
 #test
 # msg=[{"role": "user", "content": "你谁啊"}];print(LLM_invoke(msg))
@@ -287,8 +292,12 @@ class GameCLI:
                 "玩家操作日志：\n"
                 f"{self.state.message_log[-10:]}\n" )},
         ]
-        response = LLM_invoke(messages)
-        self.state.log_message(f"LLM 总结：{response}")
+        response, truth = LLM_invoke(messages)
+        if truth:
+            self.state.log_message(response)
+            return True
+        else:
+            return False
 
     def _handle_save_load(self):
         """处理存档读档"""
