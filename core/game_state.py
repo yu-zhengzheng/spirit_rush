@@ -54,6 +54,29 @@ class GameState:
         # 如果消息数超过10条，删除最老的消息
         if len(self.message_log) > 100:
             self.message_log.pop(0)
+            
+    def message_log_simplify(self):
+        """过滤掉与游戏无关的消息，例如玩家无效操作后的提示"""
+        # 定义需要过滤的消息关键词
+        filter_keywords = [
+            "无效输入",
+            "无效的存档编号",
+            "没有足够的空闲弟子",
+            "没有这么多正在工作的弟子",
+            "灵石不足",
+            "没有发现存档文件"
+        ]
+        
+        # 过滤消息
+        filtered_log = []
+        for msg in self.message_log:
+            # 检查消息是否包含过滤关键词
+            should_filter = any(keyword in msg for keyword in filter_keywords)
+            if not should_filter:
+                filtered_log.append(msg)
+        
+        # 更新消息日志
+        self.message_log = filtered_log
 
     def log_data(self):
         """添加数据到日志"""

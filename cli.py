@@ -55,6 +55,30 @@ class GameCLI:
         self.state = GameState()
         self.event_manager = EventManager()
 
+    def run(self):
+        """游戏主界面与主循环"""
+        while True:
+            os.system("cls")
+            print("=" * 50, "\n      欢迎来到《仙宗 - 修仙模拟器》\n", "=" * 50)
+            print("1. 开始新游戏\n2. 读取存档\n0. 退出游戏\n", "=" * 50)
+
+            menu_choice = input("\n请选择操作: ").strip()
+
+            if menu_choice == "1":
+                self.__init__()
+            elif menu_choice == "2":
+                self.load_save()
+            elif menu_choice == "0":
+                print("\n感谢游玩，江湖再见！")
+                break
+            else:
+                continue
+
+            # 游戏主循环
+            while True:
+                if self.run_turn():
+                    break
+
     def run_turn(self):
         """
 
@@ -218,19 +242,6 @@ class GameCLI:
                 else:
                     self.state.log_message(f"灵石不足，扩建需要 {cost} 灵石。")
 
-    def LLM_summary(self):
-        """使用LLM总结当前游戏状态"""
-        messages = [
-            {"role": "system", "content": ("你是一名小说家，请根据当前游戏状态以及本年度的玩家行动日志，写一段仙侠风的简短的年度总结\n"
-                "当前游戏状态：\n"
-                f"{self.state.to_dict()}\n"
-                "玩家操作日志：\n"
-                f"{self.state.message_log[-10:]}\n" )},
-            # {"role": "user", "content": self.state.to_dict()}
-        ]
-        response = LLM_invoke(messages)
-        self.state.log_message(f"LLM 总结：{response}")
-
     def _end_player_turn(self):
         """结束回合"""
         print("\n回合结束，结算中...")
@@ -259,33 +270,25 @@ class GameCLI:
         # 弟子俸禄
         self.state.sect_data["wealth"] -= self.state.sect_data["disciples_total"] * DISCIPLE_BASE_WAGE
 
+        # 过滤掉无关消息
+        self.state.message_log_simplify()
+
         self.LLM_summary()
         print("结算完成。")
         input("\n按回车进入下一回合...")
 
-    def run(self):
-        """游戏主界面与主循环"""
-        while True:
-            os.system("cls")
-            print("="*50,"\n      欢迎来到《仙宗 - 修仙模拟器》\n","="*50)
-            print("1. 开始新游戏\n2. 读取存档\n0. 退出游戏\n","="*50)
-            
-            menu_choice = input("\n请选择操作: ").strip()
-            
-            if menu_choice == "1":
-                self.__init__()
-            elif menu_choice == "2":
-                self.load_save()
-            elif menu_choice == "0":
-                print("\n感谢游玩，江湖再见！")
-                break
-            else:
-                continue
-
-            # 游戏主循环
-            while True:
-                if self.run_turn():
-                    break
+    def LLM_summary(self):
+        """使用LLM总结当前游戏状态"""
+        
+        messages = [
+            {"role": "system", "content": ("你是一名小说家，请根据当前游戏状态以及本年度的玩家行动日志，写一段仙侠风的简短的年度总结\n"
+                "当前游戏状态：\n"
+                f"{self.state.to_dict()}\n"
+                "玩家操作日志：\n"
+                f"{self.state.message_log[-10:]}\n" )},
+        ]
+        response = LLM_invoke(messages)
+        self.state.log_message(f"LLM 总结：{response}")
 
     def _handle_save_load(self):
         """处理存档读档"""

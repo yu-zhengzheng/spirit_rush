@@ -51,3 +51,9 @@ MiniMax-M1.1 2026-02-05
 - 将 self.state.to_dict() 转换为字符串格式，避免直接传递字典对象给 LLM
 - 将 log_message 改为 log_action，与代码中其他日志记录方式保持一致
 - 优化提示词结构，提取为独立变量提高可读性
+
+GLM-4.6 2026-02-06
+修改内容：完成 GameState.message_log_simplify() 方法
+- 实现了消息过滤功能，过滤掉与游戏无关的消息，如"无效输入"、"灵石不足"等提示
+- 在 LLM_summary() 方法中调用 message_log_simplify()，确保LLM总结的内容更加有意义
+- 添加了 log_data() 方法，保持代码结构完整
