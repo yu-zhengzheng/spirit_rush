@@ -10,7 +10,7 @@ class GameState:
         self.game_time=0
 
         # 宗门数据 (根据 MMD 增加)
-        self.sect_data = {
+        self.game_data = {
             "disciples_mining": 0,
             "disciples_recruiting": 0,
             "vault_level": 1,
@@ -18,7 +18,10 @@ class GameState:
             "wealth":30,
             "disciples_total": 1
         }
-
+        
+        # 临时数据
+        self.tmp_data = {}
+        
         # 消息日志
         self.message_log=[]
 
@@ -32,6 +35,42 @@ class GameState:
         
         # 背包
         self.inventory = {}
+    
+    def update(self,data_dict:dict):
+        """更新游戏状态"""
+        for key, value in data_dict.items():
+            # 检查是否是game_data中的属性
+            if key in self.game_data:
+                # 如果值是负数，则减少；如果是正数，则增加
+                self.game_data[key] += value
+            if key in self.tmp_data:
+                # 如果值是负数，则减少；如果是正数，则增加
+                self.tmp_data[key] += value
+            # # 检查是否是类的直接属性
+            # elif hasattr(self, key):
+            #     current_value = getattr(self, key)
+            #     # 如果当前值是数字类型，则进行加减操作
+            #     if isinstance(current_value, (int, float)):
+            #         setattr(self, key, current_value + value)
+            #     # 如果是字典，则更新字典
+            #     elif isinstance(current_value, dict):
+            #         if isinstance(value, dict):
+            #             current_value.update(value)
+            #         else:
+            #             # 如果值不是字典，则尝试设置为新值
+            #             setattr(self, key, value)
+            #     # 如果是列表，则根据值的类型进行操作
+            #     elif isinstance(current_value, list):
+            #         if isinstance(value, list):
+            #             current_value.extend(value)
+            #         else:
+            #             current_value.append(value)
+            #     # 其他类型直接替换
+            #     else:
+            #         setattr(self, key, value)
+            # else:
+            #     # 如果属性不存在，则添加新属性
+            #     setattr(self, key, value)
 
     def add_item(self, item_name: str, count: int = 1):
         """添加物品到背包"""
@@ -89,20 +128,20 @@ class GameState:
 
     def gain_wealth(self, amount: int):
         """增加财富/灵石"""
-        self.sect_data['wealth'] = min(self.max_wealth, self.sect_data['wealth'] + amount)
+        self.game_data['wealth'] = min(self.max_wealth, self.game_data['wealth'] + amount)
     
     @property
     def idle_disciples(self) -> int:
         """空闲弟子数"""
-        return self.sect_data["disciples_total"] - self.sect_data["disciples_mining"] - self.sect_data["disciples_recruiting"]
+        return self.game_data["disciples_total"] - self.game_data["disciples_mining"] - self.game_data["disciples_recruiting"]
 
     @property
     def max_wealth(self) -> int:
-        return self.sect_data["vault_level"]*100
+        return self.game_data["vault_level"]*100
 
     @property
     def max_disciples(self) -> int:
-        return self.sect_data["cave_level"]*100
+        return self.game_data["cave_level"]*100
 
     def to_dict(self) -> dict:
         """序列化为字典"""

@@ -6,7 +6,19 @@ from events.special_events import EventManager
 from core.save_system import save_game, load_game, get_save_files
 from config.settings import *
 
-
+# 工具配置
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "游戏变量更新",
+            "description": "更新游戏变量",
+            "parameters": {
+                #TODO
+            },
+        },
+    }
+]
 
 def LLM_invoke(message,tools=None):
     """调用LLM"""
@@ -128,9 +140,9 @@ class GameCLI:
         print(f"\n --- 第 {self.state.game_time} 年 ---")
         # print(self.state.sect_data)
         print("="*50)
-        print(f"【财富】 灵石: {self.state.sect_data['wealth']}/{self.state.max_wealth}")
-        print(f"【弟子】 总数: {self.state.sect_data['disciples_total']}/{self.state.max_disciples} | 空闲: {self.state.idle_disciples}")
-        print(f"【分配】 挖矿: {self.state.sect_data['disciples_mining']} | 招募: {self.state.sect_data['disciples_recruiting']}")
+        print(f"【财富】 灵石: {self.state.game_data['wealth']}/{self.state.max_wealth}")
+        print(f"【弟子】 总数: {self.state.game_data['disciples_total']}/{self.state.max_disciples} | 空闲: {self.state.idle_disciples}")
+        print(f"【分配】 挖矿: {self.state.game_data['disciples_mining']} | 招募: {self.state.game_data['disciples_recruiting']}")
         print("="*50)
         # 显示日志消息
         if self.state.message_log:
@@ -181,9 +193,9 @@ class GameCLI:
         """弟子管理"""
         while True:
             self.refresh()
-            print(f"\n【弟子管理】 总数: {self.state.sect_data['disciples_total']} | 空闲: {self.state.idle_disciples}")
-            print(f"1. 派遣至 挖矿 (当前: {self.state.sect_data['disciples_mining']})")
-            print(f"2. 派遣至 招募 (当前: {self.state.sect_data['disciples_recruiting']})")
+            print(f"\n【弟子管理】 总数: {self.state.game_data['disciples_total']} | 空闲: {self.state.idle_disciples}")
+            print(f"1. 派遣至 挖矿 (当前: {self.state.game_data['disciples_mining']})")
+            print(f"2. 派遣至 招募 (当前: {self.state.game_data['disciples_recruiting']})")
             print(f"3. 召回 挖矿弟子")
             print(f"4. 召回 招募弟子")
             print(f"0. 返回")
@@ -197,7 +209,7 @@ class GameCLI:
                 amount = int(amount)
                 task = "mining" if choice == "1" else "recruiting"
                 if self.state.idle_disciples >= amount:
-                    self.state.sect_data[f"disciples_{task}"] += amount
+                    self.state.game_data[f"disciples_{task}"] += amount
                     msg = "挖矿" if task == "mining" else "招募"
                     self.state.log_message(f"成功派遣 {amount} 名弟子去{msg}。")
                 else:
@@ -207,9 +219,9 @@ class GameCLI:
                 amount = input("输入召回人数: ").strip()
                 if not amount.isdigit(): continue
                 amount = int(amount)
-                current = self.state.sect_data[f"disciples_{task}"]
+                current = self.state.game_data[f"disciples_{task}"]
                 if current >= amount:
-                    self.state.sect_data[f"disciples_{task}"] -= amount
+                    self.state.game_data[f"disciples_{task}"] -= amount
                     msg = "挖矿" if task == "mining" else "招募"
                     self.refresh()
                     self.state.log_message(f"成功召回 {amount} 名去{msg}的弟子。")
@@ -221,7 +233,7 @@ class GameCLI:
         while True:
             self.refresh()
             # info = self.game_state.get_display_info()
-            print(f"\n【宗门管理】 财富: {self.state.sect_data['wealth']} 灵石")
+            print(f"\n【宗门管理】 财富: {self.state.game_data['wealth']} 灵石")
             print(f"1. 扩建灵库 (当前上限: {self.state.max_wealth}) - 消耗 10 灵石")
             print(f"2. 扩建洞府 (当前上限: {self.state.max_disciples}) - 消耗 10 灵石")
             print(f"0. 返回")
@@ -231,17 +243,17 @@ class GameCLI:
             
             if choice in ["1", "2"]:
                 cost = 10
-                if self.state.sect_data['wealth'] >= cost:
-                    self.state.sect_data['wealth'] -= cost
+                if self.state.game_data['wealth'] >= cost:
+                    self.state.game_data['wealth'] -= cost
                     if choice == "1":
                         old_max_wealth = self.state.max_wealth
-                        self.state.sect_data["vault_level"] += 1
+                        self.state.game_data["vault_level"] += 1
                         new_max_wealth = self.state.max_wealth
                         self.refresh()
                         self.state.log_message(f"灵库扩建成功！上限 {old_max_wealth} → {new_max_wealth}")
                     else:
                         old_max_disciples = self.state.max_disciples
-                        self.state.sect_data["cave_level"] += 1
+                        self.state.game_data["cave_level"] += 1
                         new_max_disciples = self.state.max_disciples
                         self.state.log_message(f"洞府扩建成功！上限 {old_max_disciples} → {new_max_disciples}")
                 else:
@@ -253,27 +265,27 @@ class GameCLI:
         
         # 1. 模拟弟子工作产出
         # 挖矿产出
-        mining_gain = self.state.sect_data["disciples_mining"] * 2
+        mining_gain = self.state.game_data["disciples_mining"] * 2
         if mining_gain > 0:
             self.state.gain_wealth(mining_gain)
             self.state.log_message(f"弟子挖矿产出: {mining_gain} 灵石")
 
         # 招募产出
-        recruiting_disciples = self.state.sect_data["disciples_recruiting"]
+        recruiting_disciples = self.state.game_data["disciples_recruiting"]
         if recruiting_disciples > 0:
             new_disciples = 0
             for _ in range(recruiting_disciples):
-                if self.state.sect_data["disciples_total"] < self.state.max_disciples:
+                if self.state.game_data["disciples_total"] < self.state.max_disciples:
                     if random.random() < RECRUITMENT_BASE_GAIN: # 3% 几率招募成功
                         new_disciples += 1
-                        self.state.sect_data["disciples_total"] += 1
+                        self.state.game_data["disciples_total"] += 1
             if new_disciples > 0:
                 self.state.log_message(f"招募弟子成功：新增 {new_disciples} 名弟子！")
             else:
                 self.state.log_message("本轮未招募到新弟子。")
 
         # 弟子俸禄
-        self.state.sect_data["wealth"] -= self.state.sect_data["disciples_total"] * DISCIPLE_BASE_WAGE
+        self.state.game_data["wealth"] -= self.state.game_data["disciples_total"] * DISCIPLE_BASE_WAGE
 
         # 过滤掉无关消息
         self.state.message_log_simplify()
