@@ -90,7 +90,7 @@ class GameCLI:
         玩家返回主菜单时return True
         """
         self.state.game_time+=1
-        self._start_turn()
+        self.start_turn()
 
         # 玩家操作阶段
         while True:
@@ -105,16 +105,16 @@ class GameCLI:
             choice = input("\n请选择操作: ").strip()
 
             if choice == "1":
-                self._manage_disciples()
+                self.manage_disciples()
                 self.refresh()
             elif choice == "2":
-                self._manage_sect()
+                self.manage_sect()
                 self.refresh()
             elif choice == "5":
-                self._handle_save_load()
+                self.handle_save_load()
                 self.refresh()
             elif choice == "9":
-                self._end_player_turn()
+                self.end_player_turn()
                 break
             elif choice == "0":
                 return True
@@ -138,7 +138,7 @@ class GameCLI:
             for log_msg in self.state.message_log[-10:]:  # 只显示最近5条日志
                 print(f"  {log_msg}")
 
-    def _start_turn(self):
+    def start_turn(self):
         """开始新回合"""
         self.refresh()
         
@@ -149,9 +149,9 @@ class GameCLI:
         )
 
         if event:
-            self._handle_event(event)
+            self.handle_event(event)
 
-    def _handle_event(self, event: dict):
+    def handle_event(self, event: dict):
         """处理事件"""
         print(f"\n【事件：{event['title']}】")
         print(event['description'])
@@ -177,7 +177,7 @@ class GameCLI:
         if result.get("trigger_dialogue"):
             self._start_dialogue(result["trigger_dialogue"])
 
-    def _manage_disciples(self):
+    def manage_disciples(self):
         """弟子管理"""
         while True:
             self.refresh()
@@ -216,7 +216,7 @@ class GameCLI:
                 else:
                     self.state.log_message("没有这么多正在工作的弟子！")
 
-    def _manage_sect(self):
+    def manage_sect(self):
         """宗门管理"""
         while True:
             self.refresh()
@@ -247,7 +247,7 @@ class GameCLI:
                 else:
                     self.state.log_message(f"灵石不足，扩建需要 {cost} 灵石。")
 
-    def _end_player_turn(self):
+    def end_player_turn(self):
         """结束回合"""
         print("\n回合结束，结算中...")
         
@@ -278,7 +278,8 @@ class GameCLI:
         # 过滤掉无关消息
         self.state.message_log_simplify()
 
-        self.LLM_summary()
+        if random.random() < 0.2:
+            self.LLM_summary()
         print("结算完成。")
         input("\n按回车进入下一回合...")
 
@@ -299,7 +300,7 @@ class GameCLI:
         else:
             return False
 
-    def _handle_save_load(self):
+    def handle_save_load(self):
         """处理存档读档"""
         print("\n1. 存档")
         print("2. 读档")
@@ -339,7 +340,7 @@ class GameCLI:
                 selected_file = files[slot]
                 try:
                     # 直接使用get_save_files()中已经读取的数据
-                    self._apply_save_data(selected_file["data"]["state"])
+                    self.apply_save_data(selected_file["data"]["state"])
                     self.state.log_message(f"读档成功！从 {selected_file['filename']} 读取")
                 except Exception as e:
                     self.state.log_message(f"读档失败：{str(e)}")
@@ -348,7 +349,7 @@ class GameCLI:
         else:
             self.state.log_message("无效的输入")
 
-    def _apply_save_data(self, data: dict):
+    def apply_save_data(self, data: dict):
         """恢复存档数据"""
         self.state = GameState.from_dict(data)
         # event_data = data.get("event_manager", {})
