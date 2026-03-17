@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "slot": "存档三",
+  "saved_at": "2026-03-17T17:36:00+08:00",
+  "current_event": "return_hometown",
+  "attributes": {
+    "realm": "筑基期",
+    "realm_level": 1,
+    "cultivation": 0,
+    "max_cultivation": 5000,
+    "max_hp": 120,
+    "current_hp": 100,
+    "spirit_stones": 2755,
+    "stamina": 100,
+    "max_stamina": 100,
+    "root": "五灵根（杂）",
+    "technique": "玄冰诀",
+    "technique_level": "玄阶",
+    "reputation": 1200,
+    "time_passed": 580,
+    "inventory": [
+      "聚气丹x1",
+      "回春丹x1",
+      "筑基丹x1",
+      "劣质飞刀x3",
+      "御风诀",
+      "百年虎骨",
+      "避毒玉佩",
+      "家传玉简"
+    ],
+    "debuffs": [],
+    "pills": {
+      "聚气丹": 1,
+      "回春丹": 1,
+      "筑基丹": 1
+    }
+  },
+  "flags": {
+    "has_manual": true,
+    "has_entered_sect": true,
+    "has_achieved_foundation": true,
+    "returned_hometown": true,
+    "discovered_hidden_cave": false
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "slot": "存档一",
+  "saved_at": "2026-03-13T17:27:00+08:00",
+  "current_event": "cultivate_1",
+  "attributes": {
+    "realm": "炼气二层",
+    "realm_level": 2,
+    "cultivation": 250,
+    "max_cultivation": 1000,
+    "max_hp": 100,
+    "current_hp": 70,
+    "spirit_stones": 100,
+    "stamina": 70,
+    "max_stamina": 100,
+    "root": "五灵根（杂）",
+    "technique": "玄冰诀",
+    "technique_level": "玄阶",
+    "reputation": 50,
+    "time_passed": 91,
+    "inventory": [],
+    "debuffs": [],
+    "pills": {}
+  },
+  "flags": {
+    "has_manual": true,
+    "has_entered_sect": true
+  }
+}

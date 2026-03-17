@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "slot": "存档二",
+  "saved_at": "2026-03-14T15:24:00+08:00",
+  "current_event": "cave_advanced_cultivation",
+  "attributes": {
+    "realm": "炼气五层",
+    "realm_level": 5,
+    "cultivation": 1880,
+    "max_cultivation": 2500,
+    "max_hp": 100,
+    "current_hp": 70,
+    "spirit_stones": 3270,
+    "stamina": -10,
+    "max_stamina": 100,
+    "root": "五灵根（杂）",
+    "technique": "玄冰诀",
+    "technique_level": "玄阶",
+    "reputation": 550,
+    "time_passed": 415,
+    "inventory": ["聚气丹x2", "回春丹x1", "筑基丹x2", "御风诀"],
+    "debuffs": ["暗伤"],
+    "pills": {
+      "聚气丹": 2,
+      "回春丹": 1,
+      "筑基丹": 2
+    }
+  },
+  "flags": {
+    "has_manual": true,
+    "has_entered_sect": true
+  }
+}
