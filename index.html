@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>淘灵热监控</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { 
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #0d1117;
+            color: #c9d1d9;
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30363d;
+        }
+        .status { 
+            color: #3fb950;
+            font-size: 14px;
+        }
+        .status.error { color: #f85149; }
+        .content { 
+            background: #161b22; 
+            padding: 24px; 
+            border-radius: 8px;
+            line-height: 1.7;
+        }
+        .content h1 { color: #58a6ff; font-size: 28px; margin: 0 0 20px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        .content h2 { color: #8b949e; font-size: 18px; margin: 20px 0 10px; border-bottom: 1px solid #21262d; padding-bottom: 5px; }
+        .content h3 { color: #c9d1d9; font-size: 16px; margin: 15px 0 8px; }
+        .content table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+        .content th, .content td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; }
+        .content th { background: #21262d; color: #8b949e; }
+        .content tr:nth-child(even) { background: #0d1117; }
+        .content ul, .content ol { padding-left: 20px; }
+        .content li { margin: 4px 0; }
+        .content code { background: #21262d; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; }
+        .content pre { background: #21262d; padding: 12px; border-radius: 6px; overflow-x: auto; }
+        .content blockquote { border-left: 3px solid #30363d; margin: 10px 0; padding-left: 15px; color: #8b949e; }
+        .content hr { border: none; border-top: 1px solid #30363d; margin: 20px 0; }
+        .content p { margin: 10px 0; }
+        .content strong { color: #58a6ff; }
+        .content em { color: #8b949e; }
+        #refresh-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 12px;
+            background: #238636;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #refresh-indicator.show { opacity: 1; }
+        .game-info { background: #1f2428; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .character { color: #ffa657; font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span></span>
+        <span class="status" id="status">🟢 连接中...</span>
+    </div>
+    <div class="content" id="content">加载中...</div>
+    <div id="refresh-indicator">🔄 已刷新</div>
+    <button id="stop-btn" onclick="stopServer()">🛑 停止监控</button>
+    
+    <style>
+        #stop-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #da3633;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #stop-btn:hover { background: #f85149; }
+    </style>
+    
+    <script>
+        function stopServer() {
+            if (confirm('确定要停止监控服务器吗？')) {
+                fetch('/stop', { method: 'POST' })
+                    .then(() => {
+                        document.getElementById('content').innerHTML = '<p style="color: #f85149;">服务器已停止</p>';
+                        document.getElementById('stop-btn').style.display = 'none';
+                        document.getElementById('status').textContent = '🔴 已停止';
+                    })
+                    .catch(() => {
+                        alert('停止失败');
+                    });
+            }
+        }
+        
+        let lastContent = '';
+        
+        async function fetchData() {
+            try {
+                const resp = await fetch('/data');
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const text = await resp.text();
+                
+                if (text !== lastContent) {
+                    lastContent = text;
+                    document.getElementById('content').innerHTML = marked.parse(text);
+                    showRefresh();
+                }
+                
+                document.getElementById('status').textContent = '🟢 实时监控中';
+                document.getElementById('status').classList.remove('error');
+            } catch (e) {
+                document.getElementById('status').textContent = '🔴 连接失败 - ' + e.message;
+                document.getElementById('status').classList.add('error');
+            }
+        }
+        
+        function showRefresh() {
+            const indicator = document.getElementById('refresh-indicator');
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 1500);
+        }
+        
+        fetchData();
+        setInterval(fetchData, 2000);
+    </script>
+</body>
+</html>
