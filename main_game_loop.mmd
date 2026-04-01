@@ -1,20 +1,71 @@
 ---
 config:
   flowchart:
-  curve: linear
+    curve: linear
 ---
-graph TD;
-	回合开始 --> LLM生成随机事件
-	LLM生成随机事件 --> 等待玩家输入
-	等待玩家输入 --> LLM生成事件结果
+graph TD
+  Start[游戏启动] --> Init[初始化玩家属性<br/>炼气期、初始灵石]
+  Init --> Intro[介绍世界观和目标]
+  Intro --> MainLoop[主游戏循环]
 
+  MainLoop --> TimeAdvance[时间推进<br/>年/月/日]
+  TimeAdvance --> GenerateEvent[生成随机事件]
+  GenerateEvent --> UpdatePrices[更新商品价格<br/>根据事件影响]
+  UpdatePrices --> ShowStatus[展示当前状态<br/>时间、资产、价格变化]
 
-	LLM生成事件结果 --> 等待玩家操作
+  ShowStatus --> PlayerDecision{玩家决策}
 
-	等待玩家操作 --> A["调整各工作弟子人数（挖矿，招募）"] -->等待玩家操作
-	等待玩家操作 --> B["花灵石扩建宗门（灵库，洞府）"]-->等待玩家操作
+  PlayerDecision -->|查看市场| ViewMarket[查看商品价格<br/>和历史趋势]
+  ViewMarket --> PlayerDecision
 
-	等待玩家操作 -- 玩家结束回合 -->回合结束
+  PlayerDecision -->|购买物品| Buy[选择商品和数量<br/>扣除灵石]
+  Buy --> PlayerDecision
 
+  PlayerDecision -->|出售物品| Sell[选择库存商品<br/>获得灵石]
+  Sell --> PlayerDecision
 
-	回合结束-.回合结算.->回合开始
+  PlayerDecision -->|查看新闻| ViewNews[查看近期新闻事件]
+  ViewNews --> PlayerDecision
+
+  PlayerDecision -->|查看库存| ViewInventory[查看当前库存]
+  ViewInventory --> PlayerDecision
+
+  PlayerDecision -->|查看人脉| ViewRelationships[查看NPC关系]
+  ViewRelationships --> PlayerDecision
+
+  PlayerDecision -->|修行提升| Cultivate[消耗资源提升修为]
+  Cultivate --> CheckBreakthrough{突破成功?}
+  CheckBreakthrough -->|是| RealmUp[境界提升]
+  CheckBreakthrough -->|否| RealmStay[境界不变]
+  RealmUp --> PlayerDecision
+  RealmStay --> PlayerDecision
+
+  PlayerDecision -->|加速时间| SkipTime[跳过一段时间<br/>等待价格变化]
+  SkipTime --> MainLoop
+
+  PlayerDecision -->|游历探索| Explore[寻找机会和人脉<br/>有风险]
+  Explore --> PlayerDecision
+
+  PlayerDecision -->|结束回合| CheckEndings[检查结局条件]
+
+  CheckEndings --> CheckAscension{飞升条件满足?}
+  CheckAscension -->|是| Success[飞升成功结局]
+  CheckAscension -->|否| CheckBankruptcy{灵石为负且无法恢复?}
+  CheckBankruptcy -->|是| Fail[破产结局]
+  CheckBankruptcy -->|否| CheckLifespan{寿元耗尽?}
+  CheckLifespan -->|是| Ordinary[平庸结局]
+  CheckLifespan -->|否| CheckExit{玩家主动退出?}
+  CheckExit -->|是| SaveGame[保存进度退出]
+  CheckExit -->|否| MainLoop
+
+  Success --> End[游戏结束]
+  Fail --> End
+  Ordinary --> End
+  SaveGame --> End
+
+  style Start fill:#e1f5ff
+  style End fill:#ffe1e1
+  style Success fill:#d4edda
+  style Fail fill:#f8d7da
+  style Ordinary fill:#fff3cd
+  style SaveGame fill:#d1ecf1
